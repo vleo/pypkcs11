@@ -138,6 +138,14 @@ cdef extern:
         CK_ULONG    ulNewAdminPinLen
         CK_BYTE_PTR pNewUserPin
         CK_ULONG    ulNewUserPinLen
+        CK_FLAGS    ChangeUserPINPolicy;
+        CK_ULONG    ulMinAdminPinLen
+        CK_ULONG    ulMinUserPinLen
+        CK_ULONG    ulMaxAdminRetryCount
+        CK_ULONG    ulMaxUserRetryCount
+        CK_BYTE_PTR pTokenLabel
+        CK_ULONG    ulLabelLen
+        CK_ULONG    ulSmMode
 
 cdef CK_FUNCTION_LIST_PTR functionList
 cdef CK_FUNCTION_LIST_EXTENDED_PTR functionListEx
@@ -228,37 +236,43 @@ def get_slots_list():
   return rv1, rv2
 
 def format_token():
-  
-  cdef CK_SLOT_ID slot
+ 
+    
+    cdef CK_SLOT_ID slot
 
-  soPin = bytearray("87654321",'utf-8')
-  
-  cdef CK_RUTOKEN_INIT_PARAM initParam
-  
-  cdef CK_RV rv1
-  
-  errorCode = 1
-  
-  initParam.ulSizeofThisStructure = sizeof(CK_RUTOKEN_INIT_PARAM)
-  initParam.UseRepairMode = 0
-  initParam.pNewAdminPin = bytearray("87654321",'utf-8')
-  initParam.ulNewAdminPinLen = 8
-  initParam.pNewUserPin = bytearray("12345678",'utf-8')
-  initParam.ulNewUserPinLen = 8
-  initParam.ulMinAdminPinLen = 6
-  initParam.ulMinUserPinLen = 6
-  initParam.ChangeUserPINPolicy = (0x00000001 | 0x00000002)
-  initParam.ulMaxAdminRetryCount = 10
-  initParam.ulMaxUserRetryCount = 10
-  initParam.pTokenLabel = "rutoken"
-  initParam.ulLabelLen = 7
-  initParam.ulSmMode = 0
+    soPin = bytearray("87654321",'utf-8')
+    pin = bytearray("12345678",'utf-8')
+    
+    cdef CK_RUTOKEN_INIT_PARAM initParam
+    
+    cdef CK_RV rv1
+    errorCode = 1
+    
+    errorCode = 1
+    
+    initParam.ulSizeofThisStructure = sizeof(CK_RUTOKEN_INIT_PARAM)
+    initParam.UseRepairMode = 0
+    initParam.pNewAdminPin = soPin
+    initParam.ulNewAdminPinLen = 8
+    initParam.pNewUserPin = pin
+    initParam.ulNewUserPinLen = 8
+    initParam.ulMinAdminPinLen = 6
+    initParam.ulMinUserPinLen = 6
+    initParam.ChangeUserPINPolicy = (0x00000001 | 0x00000002)
+    initParam.ulMaxAdminRetryCount = 10
+    initParam.ulMaxUserRetryCount = 10
+    initParam.pTokenLabel = "rutoken"
+    initParam.ulLabelLen = 7
+    initParam.ulSmMode = 0
 
-  rv1 = functionListEx.C_EX_InitToken(slot, soPin, len(soPin), &initParam)
 
+    rv1 = functionListEx.C_EX_InitToken(slot, soPin, len(soPin), &initParam)
+    print("result: ", rvToString(rv1))
+    
+    errorCode = 0
+    printf("Token has been initialized successfully.\n")
 
-  errorCode = 0
-  printf("Token has been initialized successfully.\n")
+    return rv1
 
 
 
