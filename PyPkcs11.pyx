@@ -215,10 +215,10 @@ def get_slots_list():
 
   cdef CK_RV rv1
 
-  slotCountPtr[0]=12345
+  #slotCountPtr[0]=12345
 
   print(" Slots available: ", <CK_ULONG>slotCount)
-  print("cython.NULL: ", <uintptr_t>cython.NULL)
+  #print("cython.NULL: ", <uintptr_t>cython.NULL)
 
   rv1 =  functionList.C_GetSlotList(1, cython.NULL, slotCountPtr)
   print("result: ", rvToString(rv1))
@@ -231,7 +231,7 @@ def get_slots_list():
 
 
   rv2 =  functionList.C_GetSlotList(1, slots_ptr[0], slotCountPtr)
-  print(" C_GetSlotList: ", <CK_ULONG>rv2)
+  #print(" C_GetSlotList: ", <CK_ULONG>rv2)
 
   return rv1, rv2
 
@@ -275,6 +275,6 @@ def format_token():
     return rv1
 
 
-
+    
 
 
