@@ -59,7 +59,7 @@ cdef extern:
     ctypedef CK_RV ( * CK_C_GetFunctionList) ( CK_FUNCTION_LIST_PTR_PTR ppFunctionList )
 
     ctypedef CK_FUNCTION_LIST_EXTENDED * CK_FUNCTION_LIST_EXTENDED_PTR
-    ctypedef CK_FUNCTION_LIST_PTR * CK_FUNCTION_LIST_EXTENDED_PTR_PTR
+    ctypedef CK_FUNCTION_LIST_EXTENDED_PTR * CK_FUNCTION_LIST_EXTENDED_PTR_PTR
     ctypedef CK_RV ( * CK_C_EX_GetFunctionListExtended) ( CK_FUNCTION_LIST_EXTENDED_PTR_PTR ppFunctionList )
     ctypedef CK_RV ( * CK_C_EX_InitToken) ( CK_SLOT_ID slotID, CK_UTF8CHAR_PTR pPin, CK_ULONG ulPinLen, CK_RUTOKEN_INIT_PARAM_PTR pInitInfo )
 
@@ -198,8 +198,8 @@ def init_pkcs11(path):
     cdef CK_RV rv3
     rv3 = functionList.C_Initialize(&initArgs)
 
-    cdef CK_RV rv4
-    rv4 = functionListEx.C_Initialize(&initArgs)
+    # cdef CK_RV rv4
+    # rv4 = functionListEx.C_Initialize(&initArgs)
 
     
     return rv1,rv3
@@ -224,7 +224,7 @@ def get_slots_list():
 
   cdef CK_RV rv1
 
-  #slotCountPtr[0]=12345
+  slotCountPtr[0]=12345
 
   print(" Slots available: ", <CK_ULONG>slotCount)
   #print("cython.NULL: ", <uintptr_t>cython.NULL)
@@ -249,7 +249,7 @@ def format_token():
     cdef CK_SLOT_ID slot = slots[0]
 
 
-    print("---" + int(slot))
+    #print("---" + int(slot))
 
     soPin = bytearray("87654321",'utf-8')
     pin = bytearray("12345678",'utf-8')

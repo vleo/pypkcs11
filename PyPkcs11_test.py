@@ -7,3 +7,4 @@ rvs1 = PyPkcs11.get_slots_list()
 
 rvs2 = PyPkcs11.format_token()
 # #print("rvs: {}".format(rvs))
+
