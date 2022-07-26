@@ -65,7 +65,6 @@ cdef extern:
 
     ctypedef CK_ULONG CK_SLOT_ID
 
-
     ctypedef CK_RV ( * CK_CREATEMUTEX)  (CK_VOID_PTR_PTR)
     ctypedef CK_RV ( * CK_DESTROYMUTEX) (CK_VOID_PTR_PTR)
     ctypedef CK_RV ( * CK_LOCKMUTEX)    (CK_VOID_PTR_PTR)
@@ -138,7 +137,7 @@ cdef extern:
         CK_ULONG    ulNewAdminPinLen
         CK_BYTE_PTR pNewUserPin
         CK_ULONG    ulNewUserPinLen
-        CK_FLAGS    ChangeUserPINPolicy;
+        CK_FLAGS    ChangeUserPINPolicy
         CK_ULONG    ulMinAdminPinLen
         CK_ULONG    ulMinUserPinLen
         CK_ULONG    ulMaxAdminRetryCount
@@ -150,6 +149,7 @@ cdef extern:
 cdef CK_FUNCTION_LIST_PTR functionList
 cdef CK_FUNCTION_LIST_EXTENDED_PTR functionListEx
 cdef CK_FUNCTION_LIST cfl
+cdef CK_SLOT_ID_PTR slots
 
 rvToStrDict = { 
     0: 'CKR_OK', 
@@ -184,13 +184,22 @@ def init_pkcs11(path):
     getFunctionList = <CK_C_GetFunctionList> dlsym(module, C_GetFunctionList_ba)
     print("getFunctionList= ", <uintptr_t>getFunctionList)
 
+    C_EX_GetFunctionListExtended_ba = bytearray("C_EX_GetFunctionListExtended",'utf-8')
+    cdef CK_C_EX_GetFunctionListExtended getFunctionListEx
+    getFunctionListEx = <CK_C_EX_GetFunctionListExtended> dlsym(module, C_EX_GetFunctionListExtended_ba)
+    print("getFunctionListEx= ", <uintptr_t>getFunctionListEx)
 
     cdef CK_RV rv1
     rv1 = getFunctionList(&functionList)
 
+    cdef CK_RV rv2
+    rv2 = getFunctionListEx(&functionListEx)
 
     cdef CK_RV rv3
     rv3 = functionList.C_Initialize(&initArgs)
+
+    cdef CK_RV rv4
+    rv4 = functionListEx.C_Initialize(&initArgs)
 
     
     return rv1,rv3
@@ -237,11 +246,14 @@ def get_slots_list():
 
 def format_token():
  
-    
-    cdef CK_SLOT_ID slot
+    cdef CK_SLOT_ID slot = slots[0]
+
+
+    print("---" + int(slot))
 
     soPin = bytearray("87654321",'utf-8')
     pin = bytearray("12345678",'utf-8')
+    label = bytearray("rutoken",'utf-8')
     
     cdef CK_RUTOKEN_INIT_PARAM initParam
     
@@ -261,7 +273,7 @@ def format_token():
     initParam.ChangeUserPINPolicy = (0x00000001 | 0x00000002)
     initParam.ulMaxAdminRetryCount = 10
     initParam.ulMaxUserRetryCount = 10
-    initParam.pTokenLabel = "rutoken"
+    initParam.pTokenLabel = label
     initParam.ulLabelLen = 7
     initParam.ulSmMode = 0
 
