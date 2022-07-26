@@ -198,8 +198,7 @@ def init_pkcs11(path):
     cdef CK_RV rv3
     rv3 = functionList.C_Initialize(&initArgs)
 
-    # cdef CK_RV rv4
-    # rv4 = functionListEx.C_Initialize(&initArgs)
+
 
     
     return rv1,rv3
@@ -215,7 +214,7 @@ def free_pkcs11():
 
 def get_slots_list():
 
-  cdef CK_SLOT_ID_PTR slots
+ 
   cdef CK_SLOT_ID_PTR *slots_ptr = &slots
 
   cdef CK_ULONG slotCount
