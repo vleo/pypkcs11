@@ -111,6 +111,10 @@ cdef extern:
     ctypedef CK_SESSION_INFO * CK_SESSION_INFO_PTR
     ctypedef CK_RV (*CK_C_GetSessionInfo)(CK_SESSION_HANDLE hSession, CK_SESSION_INFO_PTR pInfo)
 
+    ctypedef CK_RV (*CK_C_GetOperationState)(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pOperationState, CK_ULONG_PTR pulOperationStateLen)
+
+    ctypedef CK_RV (*CK_C_SetOperationState)(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pOperationState, CK_ULONG ulOperationStateLen, CK_OBJECT_HANDLE hEncryptionKey, CK_OBJECT_HANDLE hAuthenticationKey)
+
     ctypedef CK_ULONG CK_SESSION_HANDLE
     ctypedef CK_ULONG CK_USER_TYPE
     ctypedef CK_RV ( * CK_C_Login) ( CK_SESSION_HANDLE hSession , CK_USER_TYPE userType , CK_UTF8CHAR_PTR pPin, CK_ULONG ulPinLen )
@@ -393,10 +397,12 @@ def mechanism_list(pin):
     cdef CK_ULONG mechanismCount
     cdef CK_MECHANISM_TYPE_PTR mechanisms
 
+    soPin = bytearray(str(pin),'utf-8')
+
     rv = functionList.C_OpenSession(slotID, 0x00000004 | 0x00000002, cython.NULL, cython.NULL, &session)
     print("result 1: ", rvToString(rv))
 
-    rv = functionList.C_Login(session, 1, pin, len(pin))
+    rv = functionList.C_Login(session, 1, soPin, len(soPin))
 
     print("result 2: ", rvToString(rv))
     
@@ -409,7 +415,7 @@ def mechanism_list(pin):
     mechanisms = <CK_MECHANISM_TYPE_PTR>malloc(mechanismCount * sizeof(CK_MECHANISM_TYPE))
 
 
-    #print(" Mechanisms: ", <CK_MECHANISM_TYPE_PTR>mechanisms[0])
+    print(" Mechanisms: ", mechanisms[1])
     rv = functionList.C_GetMechanismList(slotID, mechanisms, &mechanismCount)
 
     
