@@ -26,6 +26,8 @@ cdef extern:
     ctypedef CK_ULONG *CK_ULONG_PTR
     ctypedef CK_ULONG CK_FLAGS
     ctypedef CK_ULONG CK_OBJECT_HANDLE
+    ctypedef CK_ULONG CK_SESSION_HANDLE
+    ctypedef CK_ULONG CK_STATE
 
     ctypedef unsigned char CK_BYTE
     ctypedef CK_BYTE CK_BBOOL
@@ -82,7 +84,36 @@ cdef extern:
     ctypedef CK_ULONG CK_MECHANISM_TYPE
     ctypedef CK_MECHANISM_TYPE * CK_MECHANISM_TYPE_PTR
     ctypedef CK_MECHANISM_TYPE_PTR pMechanismList
-    ctypedef CK_RV ( *CK_C_GetMechanismList) ( CK_SLOT_ID slotID, CK_MECHANISM_TYPE_PTR pMechanismList, CK_ULONG_PTR pulCount )
+    ctypedef CK_RV ( * CK_C_GetMechanismList) ( CK_SLOT_ID slotID , CK_MECHANISM_TYPE_PTR pMechanismList , CK_ULONG_PTR pulCount )
+
+    ctypedef CK_ULONG CK_MECHANISM_TYPE
+    ctypedef CK_MECHANISM_INFO * CK_MECHANISM_INFO_PTR
+    ctypedef CK_MECHANISM_INFO * CK_MECHANISM_INFO_PTR
+    ctypedef CK_RV (*CK_C_GetMechanismInfo)(CK_SLOT_ID slotID, CK_MECHANISM_TYPE type, CK_MECHANISM_INFO_PTR pInfo)
+
+    ctypedef CK_UTF8CHAR * CK_UTF8CHAR_PTR
+    ctypedef CK_RV (*CK_C_InitToken)(CK_SLOT_ID slotID, CK_UTF8CHAR_PTR pPin, CK_ULONG ulPinLen, CK_UTF8CHAR_PTR pLabel)
+
+    ctypedef CK_ULONG CK_SESSION_HANDLE
+    ctypedef CK_RV (*CK_C_InitPIN)(CK_SESSION_HANDLE hSession, CK_UTF8CHAR_PTR pPin, CK_ULONG ulPinLen)
+
+    ctypedef CK_RV (*CK_C_SetPIN)(CK_SESSION_HANDLE hSession, CK_UTF8CHAR_PTR pOldPin, CK_ULONG ulOldLen, CK_UTF8CHAR_PTR pNewPin, CK_ULONG ulNewLen)
+
+    ctypedef CK_ULONG CK_NOTIFICATION
+    ctypedef CK_RV ( * CK_NOTIFY)(CK_SESSION_HANDLE hSession, CK_NOTIFICATION event, CK_VOID_PTR pApplication )
+    ctypedef CK_SESSION_HANDLE * CK_SESSION_HANDLE_PTR
+    ctypedef CK_RV (*CK_C_OpenSession)(CK_SLOT_ID slotID, CK_FLAGS flags, CK_VOID_PTR pApplication, CK_NOTIFY Notify, CK_SESSION_HANDLE_PTR phSession)
+
+    ctypedef CK_RV (*CK_C_CloseSession)(CK_SESSION_HANDLE hSession)
+
+    ctypedef CK_RV (*CK_C_CloseAllSessions)(CK_SLOT_ID slotID)
+
+    ctypedef CK_SESSION_INFO * CK_SESSION_INFO_PTR
+    ctypedef CK_RV (*CK_C_GetSessionInfo)(CK_SESSION_HANDLE hSession, CK_SESSION_INFO_PTR pInfo)
+
+    ctypedef CK_ULONG CK_SESSION_HANDLE
+    ctypedef CK_ULONG CK_USER_TYPE
+    ctypedef CK_RV ( * CK_C_Login) ( CK_SESSION_HANDLE hSession , CK_USER_TYPE userType , CK_UTF8CHAR_PTR pPin, CK_ULONG ulPinLen )
 
 
     struct CK_INFO:
@@ -118,6 +149,12 @@ cdef extern:
         CK_VERSION hardwareVersion
         CK_VERSION firmwareVersion
         CK_CHAR utcTime[16]
+    
+    struct CK_SESSION_INFO:
+        CK_SLOT_ID slotID
+        CK_STATE state
+        CK_FLAGS flags
+        CK_ULONG ulDeviceError
 
     struct CK_FUNCTION_LIST:
         CK_VERSION version
@@ -129,6 +166,17 @@ cdef extern:
         CK_C_GetSlotInfo C_GetSlotInfo
         CK_C_GetTokenInfo C_GetTokenInfo
         CK_C_GetMechanismList C_GetMechanismList
+        CK_C_GetMechanismInfo C_GetMechanismInfo
+        CK_C_InitToken C_InitToken
+        CK_C_InitPIN C_InitPIN
+        CK_C_SetPIN C_SetPIN
+        CK_C_OpenSession C_OpenSession
+        CK_C_CloseSession C_CloseSession
+        CK_C_CloseAllSessions C_CloseAllSessions
+        CK_C_GetSessionInfo C_GetSessionInfo
+        CK_C_GetOperationState C_GetOperationState
+        CK_C_SetOperationState C_SetOperationState
+        CK_C_Login C_Login
 
     struct CK_FUNCTION_LIST_EXTENDED:
         CK_VERSION version
@@ -188,6 +236,11 @@ cdef extern:
         CK_BYTE_PTR pTokenLabel
         CK_ULONG    ulLabelLen
         CK_ULONG    ulSmMode
+
+    struct CK_MECHANISM_INFO:
+        CK_ULONG    ulMinKeySize
+        CK_ULONG    ulMaxKeySize
+        CK_FLAGS    flags
 
 cdef CK_FUNCTION_LIST_PTR functionList
 cdef CK_FUNCTION_LIST_EXTENDED_PTR functionListEx
@@ -330,15 +383,22 @@ def format_token():
 
     return rv1
 
-def mechanism_list():
+def mechanism_list(pin):
 
-    
     cdef CK_RV rv
-    
+
     cdef CK_SLOT_ID slotID = slots[0]
-    
+
+    cdef CK_SESSION_HANDLE session
     cdef CK_ULONG mechanismCount
     cdef CK_MECHANISM_TYPE_PTR mechanisms
+
+    rv = functionList.C_OpenSession(slotID, 0x00000004 | 0x00000002, cython.NULL, cython.NULL, &session)
+    print("result 1: ", rvToString(rv))
+
+    rv = functionList.C_Login(session, 1, pin, len(pin))
+
+    print("result 2: ", rvToString(rv))
     
     print("slotID: ",slotID)
     print("CK_ULONG: ",mechanismCount)
@@ -349,7 +409,7 @@ def mechanism_list():
     mechanisms = <CK_MECHANISM_TYPE_PTR>malloc(mechanismCount * sizeof(CK_MECHANISM_TYPE))
 
 
-    print(" Mechanisms: ", mechanisms[0])
+    #print(" Mechanisms: ", <CK_MECHANISM_TYPE_PTR>mechanisms[0])
     rv = functionList.C_GetMechanismList(slotID, mechanisms, &mechanismCount)
 
     
