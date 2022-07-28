@@ -411,7 +411,7 @@ def mechanism_list(pin):
     print("result 2: ", rvToString(rv))
     
     print("slotID: ",slotID)
-    print("CK_ULONG: ",mechanismCount)
+    print("mechanismCount: ",mechanismCount)
 
     rv = functionList.C_GetMechanismList(slotID, cython.NULL, &mechanismCount)
 
@@ -424,7 +424,9 @@ def mechanism_list(pin):
     while a < mechanismCount:
         if mechanisms[i] == mech:
             print("Да")
-        print(mechanisms[i])
+        
+        print(i)
+        print(" mechanisms: ", mechanisms[i])
         a+=1
         i+=1
         
