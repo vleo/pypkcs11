@@ -389,6 +389,10 @@ def format_token():
 
     return rv1
 
+mech2string = {
+    0 : 'CKM_RSA_PKCS_KEY_PAIR_GEN'
+    }
+
 def mechanism_list(pin):
 
     cdef CK_RV rv
@@ -418,20 +422,15 @@ def mechanism_list(pin):
 
     mechanisms = <CK_MECHANISM_TYPE_PTR>malloc(mechanismCount * sizeof(CK_MECHANISM_TYPE))
 
-    cdef size_t i
+    rv = functionList.C_GetMechanismList(slotID, mechanisms, &mechanismCount)
+
     i = 0
-    cdef CK_ULONG a = 0
-    while a < mechanismCount:
-        if mechanisms[i] == mech:
-            print("Да")
+    while i < <int>mechanismCount:
         
-        print(i)
-        print(" mechanisms: ", mechanisms[i])
-        a+=1
+        print(" {}: mechanisms: {:x} {} ".format( i, mechanisms[i], mech2string[mechanisms[i]]))
         i+=1
         
 
-    rv = functionList.C_GetMechanismList(slotID, mechanisms, &mechanismCount)
 
     
     return rv
