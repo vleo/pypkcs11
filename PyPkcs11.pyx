@@ -343,19 +343,16 @@ def mechanism_list():
     print("slotID: ",slotID)
     print("CK_ULONG: ",mechanismCount)
 
-    rv = functionList.C_GetMechanismList(slotID, cython.NULL , mechanisms)
-    print("-----1")
+    rv = functionList.C_GetMechanismList(slotID, cython.NULL, &mechanismCount)
+
 
     mechanisms = <CK_MECHANISM_TYPE_PTR>malloc(mechanismCount * sizeof(CK_MECHANISM_TYPE))
 
-    print("-----2")
 
+    print(" Mechanisms: ", mechanisms[0])
     rv = functionList.C_GetMechanismList(slotID, mechanisms, &mechanismCount)
 
     
-    # printf(int(mechanisms))
-    print("-----3")
- 
     return rv
 
 
