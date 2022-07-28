@@ -35,6 +35,8 @@ cdef extern:
     ctypedef CK_BYTE *CK_BYTE_PTR
     ctypedef CK_BYTE CK_CHAR
 
+    ctypedef unsigned long int size_t
+
     ctypedef CK_SLOT_ID *CK_SLOT_ID_PTR
     ctypedef CK_SLOT_ID_PTR *CK_SLOT_ID_PTR_PTR
 
@@ -391,6 +393,8 @@ def mechanism_list(pin):
 
     cdef CK_RV rv
 
+    cdef CK_MECHANISM_TYPE mech = 0x00001220
+
     cdef CK_SLOT_ID slotID = slots[0]
 
     cdef CK_SESSION_HANDLE session
@@ -414,8 +418,17 @@ def mechanism_list(pin):
 
     mechanisms = <CK_MECHANISM_TYPE_PTR>malloc(mechanismCount * sizeof(CK_MECHANISM_TYPE))
 
+    cdef size_t i
+    i = 0
+    cdef CK_ULONG a = 0
+    while a < mechanismCount:
+        if mechanisms[i] == mech:
+            print("Да")
+        print(mechanisms[i])
+        a+=1
+        i+=1
+        
 
-    print(" Mechanisms: ", mechanisms[1])
     rv = functionList.C_GetMechanismList(slotID, mechanisms, &mechanismCount)
 
     
