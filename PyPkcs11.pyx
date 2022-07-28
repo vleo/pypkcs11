@@ -53,7 +53,7 @@ cdef extern:
 
     ctypedef CK_FUNCTION_LIST_EXTENDED *CK_FUNCTION_LIST_EXTENDED_PTR
 
-
+    
     ctypedef CK_FUNCTION_LIST * CK_FUNCTION_LIST_PTR
     ctypedef CK_FUNCTION_LIST_PTR * CK_FUNCTION_LIST_PTR_PTR
     ctypedef CK_RV ( * CK_C_GetFunctionList) ( CK_FUNCTION_LIST_PTR_PTR ppFunctionList )
@@ -72,6 +72,12 @@ cdef extern:
 
     ctypedef CK_ULONG CK_FLAGS
 
+
+    ctypedef CK_ULONG CK_MECHANISM_TYPE
+    ctypedef CK_MECHANISM_TYPE * CK_MECHANISM_TYPE_PTR
+    ctypedef CK_MECHANISM_TYPE_PTR pMechanismList
+    ctypedef CK_RV ( *CK_C_GetMechanismList) ( CK_SLOT_ID slotID, CK_MECHANISM_TYPE_PTR pMechanismList, CK_ULONG_PTR pulCount )
+
     struct CK_INFO:
         CK_VERSION    cryptokiVersion   
         CK_UTF8CHAR   manufacturerID[32]
@@ -86,6 +92,9 @@ cdef extern:
         CK_C_GetInfo C_GetInfo
         CK_C_GetFunctionList C_GetFunctionList
         CK_C_GetSlotList C_GetSlotList
+        CK_C_GetSlotInfo C_GetSlotInfo
+        CK_C_GetTokenInfo C_GetTokenInfo
+        CK_C_GetMechanismList C_GetMechanismList
 
     struct CK_FUNCTION_LIST_EXTENDED:
         CK_VERSION version
@@ -153,6 +162,9 @@ cdef CK_SLOT_ID_PTR slots
 
 rvToStrDict = { 
     0: 'CKR_OK', 
+    1: 'CKR_CANCEL',
+    2: 'CKR_HOST_MEMORY',
+    3: 'CKR_SLOT_ID_INVALID',
     7: 'CKR_ARGUMENTS_BAD' 
         }
 
@@ -246,7 +258,7 @@ def get_slots_list():
 def format_token():
  
     cdef CK_SLOT_ID slot = slots[0]
-
+    
 
     #print("---" + int(slot))
 
@@ -284,6 +296,22 @@ def format_token():
     printf("Token has been initialized successfully.\n")
 
     return rv1
+
+def mechanism_list():
+
+    print("-----1")
+    cdef CK_RV rv
+    print("-----2")
+    cdef CK_SLOT_ID slotID = slots[0]
+    print("-----3")
+    cdef CK_ULONG mechanismCount
+    
+    print("slotID: ",slotID)
+    print("CK_ULONG: ",mechanismCount)
+
+    rv = functionList.C_GetMechanismList(slotID, cython.NULL, &mechanismCount)
+    print("result: ", rvToString(rv))
+    return rv
 
 
     
