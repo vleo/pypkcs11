@@ -8,6 +8,6 @@ rvs1 = PyPkcs11.get_slots_list()
 # rvs2 = PyPkcs11.format_token()
 
 rvs3 = PyPkcs11.mechanism_list()
-print("rvs3: {}".format(rvs))
+print(rvs3)
 # #print("rvs: {}".format(rvs))
 

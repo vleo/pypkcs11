@@ -31,6 +31,7 @@ cdef extern:
     ctypedef CK_BYTE CK_BBOOL
     ctypedef CK_BYTE CK_UTF8CHAR
     ctypedef CK_BYTE *CK_BYTE_PTR
+    ctypedef CK_BYTE CK_CHAR
 
     ctypedef CK_SLOT_ID *CK_SLOT_ID_PTR
     ctypedef CK_SLOT_ID_PTR *CK_SLOT_ID_PTR_PTR
@@ -72,11 +73,17 @@ cdef extern:
 
     ctypedef CK_ULONG CK_FLAGS
 
+    ctypedef CK_SLOT_INFO * CK_SLOT_INFO_PTR
+    ctypedef CK_RV ( * CK_C_GetSlotInfo ) ( CK_SLOT_ID slotID , CK_SLOT_INFO_PTR pInfo )
+
+    ctypedef CK_TOKEN_INFO * CK_TOKEN_INFO_PTR
+    ctypedef CK_RV ( * CK_C_GetTokenInfo) ( CK_SLOT_ID slotID , CK_TOKEN_INFO_PTR pInfo)
 
     ctypedef CK_ULONG CK_MECHANISM_TYPE
     ctypedef CK_MECHANISM_TYPE * CK_MECHANISM_TYPE_PTR
     ctypedef CK_MECHANISM_TYPE_PTR pMechanismList
     ctypedef CK_RV ( *CK_C_GetMechanismList) ( CK_SLOT_ID slotID, CK_MECHANISM_TYPE_PTR pMechanismList, CK_ULONG_PTR pulCount )
+
 
     struct CK_INFO:
         CK_VERSION    cryptokiVersion   
@@ -84,6 +91,33 @@ cdef extern:
         CK_FLAGS      flags              
         CK_UTF8CHAR   libraryDescription[32]
         CK_VERSION    libraryVersion  
+
+    struct CK_SLOT_INFO:
+        CK_UTF8CHAR slotDescription[64]
+        CK_UTF8CHAR manufacturerID[32]
+        CK_FLAGS flags
+        CK_VERSION hardwareVersion
+        CK_VERSION firmwareVersion
+    
+    struct CK_TOKEN_INFO:
+        CK_UTF8CHAR label[32]
+        CK_UTF8CHAR manufacturerID[32]
+        CK_UTF8CHAR model[16]
+        CK_CHAR serialNumber[16]
+        CK_FLAGS flags
+        CK_ULONG ulMaxSessionCount
+        CK_ULONG ulSessionCount
+        CK_ULONG ulMaxRwSessionCount
+        CK_ULONG ulRwSessionCount
+        CK_ULONG ulMaxPinLen
+        CK_ULONG ulMinPinLen
+        CK_ULONG ulTotalPublicMemory
+        CK_ULONG ulFreePublicMemory
+        CK_ULONG ulTotalPrivateMemory
+        CK_ULONG ulFreePrivateMemory
+        CK_VERSION hardwareVersion
+        CK_VERSION firmwareVersion
+        CK_CHAR utcTime[16]
 
     struct CK_FUNCTION_LIST:
         CK_VERSION version
@@ -270,8 +304,7 @@ def format_token():
     
     cdef CK_RV rv1
     errorCode = 1
-    
-    errorCode = 1
+
     
     initParam.ulSizeofThisStructure = sizeof(CK_RUTOKEN_INIT_PARAM)
     initParam.UseRepairMode = 0
@@ -299,18 +332,30 @@ def format_token():
 
 def mechanism_list():
 
-    print("-----1")
+    
     cdef CK_RV rv
-    print("-----2")
+    
     cdef CK_SLOT_ID slotID = slots[0]
-    print("-----3")
+    
     cdef CK_ULONG mechanismCount
+    cdef CK_MECHANISM_TYPE_PTR mechanisms
     
     print("slotID: ",slotID)
     print("CK_ULONG: ",mechanismCount)
 
-    rv = functionList.C_GetMechanismList(slotID, cython.NULL, &mechanismCount)
-    print("result: ", rvToString(rv))
+    rv = functionList.C_GetMechanismList(slotID, cython.NULL , mechanisms)
+    print("-----1")
+
+    mechanisms = <CK_MECHANISM_TYPE_PTR>malloc(mechanismCount * sizeof(CK_MECHANISM_TYPE))
+
+    print("-----2")
+
+    rv = functionList.C_GetMechanismList(slotID, mechanisms, &mechanismCount)
+
+    
+    # printf(int(mechanisms))
+    print("-----3")
+ 
     return rv
 
 
