@@ -636,7 +636,30 @@ mech2string = {
     0x00002000 : 'CKM_DSA_PARAMETER_GEN', 
     0x00002001 : 'CKM_DH_PKCS_PARAMETER_GEN', 
     0x00002002 : 'CKM_X9_42_DH_PARAMETER_GEN', 
-    0x80000000 : 'CKM_VENDOR_DEFINED'
+    0x80000000 : 'CKM_VENDOR_DEFINED',
+    0x00001200 : 'CKM_GOSTR3410_KEY_PAIR_GEN', 
+    0x00001201 : 'CKM_GOSTR3410', 
+    0x00001202 : 'CKM_GOSTR3410_WITH_GOSTR3411', 
+    0x00001203 : 'CKM_GOSTR3410_KEY_WRAP', 
+    0x00001204 : 'CKM_GOSTR3410_DERIVE', 
+    0x00001210 : 'CKM_GOSTR3411', 
+    0x00001211 : 'CKM_GOSTR3411_HMAC', 
+    0x00001220 : 'CKM_GOST28147_KEY_GEN', 
+    0x00001221 : 'CKM_GOST28147_ECB', 
+    0x00001222 : 'CKM_GOST28147', 
+    0x00001223 : 'CKM_GOST28147_MAC', 
+    0x00001224 : 'CKM_GOST28147_KEY_WRAP',
+    0xD4321005 : 'CKM_GOSTR3410_512_KEY_PAIR_GEN', 
+    0xD4321006 : 'CKM_GOSTR3410_512', 
+    0xD4321007 : 'CKM_GOSTR3410_12_DERIVE', 
+    0xD4321008 : 'CKM_GOSTR3410_WITH_GOSTR3411_12_256', 
+    0xD4321009 : 'CKM_GOSTR3410_WITH_GOSTR3411_12_512', 
+    0xD4321012 : 'CKM_GOSTR3411_12_256', 
+    0xD4321013 : 'CKM_GOSTR3411_12_512', 
+    0xD4321014 : 'CKM_GOSTR3411_12_256_HMAC', 
+    0xD4321015 : 'CKM_GOSTR3411_12_512_HMAC', 
+    0xD4321025 : 'CKM_KDF_4357', 
+    0xD4321026 : 'CKM_KDF_GOSTR3411_2012_256'
     }
 
 def mechanism_list(pin):
@@ -672,9 +695,13 @@ def mechanism_list(pin):
 
     i = 0
     while i < <int>mechanismCount:
-        print(mechanisms[i])
-        #print(" {}: mechanisms: {:x} {} ".format( i, mechanisms[i], mech2string[mechanisms[i]]))
-        i+=1
+        #print(mechanisms[i])
+        if (mechanisms[i] == 3560050728) or (mechanisms[i] == 3560050730):
+            print(" {}: mechanisms: {:x} ".format( i, mechanisms[i]))
+            i+=1
+        else:
+            print(" {}: mechanisms: {:x} {} ".format( i, mechanisms[i], mech2string[mechanisms[i]]))
+            i+=1
         
     
     return rv
