@@ -1,7 +1,9 @@
+from __future__ import print_function
 import cython
 
 from libc.stdlib cimport malloc
 from libc.stdio cimport printf
+
 
 cdef extern from "stdint.h":
     ctypedef unsigned long long uintptr_t
@@ -659,7 +661,32 @@ mech2string = {
     0xD4321014 : 'CKM_GOSTR3411_12_256_HMAC', 
     0xD4321015 : 'CKM_GOSTR3411_12_512_HMAC', 
     0xD4321025 : 'CKM_KDF_4357', 
-    0xD4321026 : 'CKM_KDF_GOSTR3411_2012_256'
+    0xD4321026 : 'CKM_KDF_GOSTR3411_2012_256',
+    0xD432102A : 'CKM_MAGMA_KEY_GEN',
+    0xD4321028 : 'CKM_KUZNYECHIK_KEY_WRAP' #https://habr.com/ru/post/542182/
+    }
+
+mechFlag = {
+    '0x00000001' : 'CKF_HW', 
+    '0x00000100' : 'CKF_ENCRYPT', 
+    '0x00000200' : 'CKF_DECRYPT', 
+    '0x00000400' : 'CKF_DIGEST', 
+    '0x00000800' : 'CKF_SIGN', 
+    '0x00001000' : 'CKF_SIGN_RECOVER', 
+    '0x00002000' : 'CKF_VERIFY', 
+    '0x00004000' : 'CKF_VERIFY_RECOVER', 
+    '0x00008000' : 'CKF_GENERATE', 
+    '0x00010000'  : 'CKF_GENERATE_KEY_PAIR', 
+    '0x00020000' : 'CKF_WRAP', 
+    '0x00040000' : 'CKF_UNWRAP', 
+    '0x00080000' : 'CKF_DERIVE', 
+    '0x00100000' : 'CKF_EC_F_P', 
+    '0x00200000' : 'CKF_EC_F_2M', 
+    '0x00400000' : 'CKF_EC_ECPARAMETERS', 
+    '0x00800000' : 'CKF_EC_NAMEDCURVE', 
+    '0x01000000' : 'CKF_EC_UNCOMPRESS', 
+    '0x02000000' : 'CKF_EC_COMPRESS', 
+    '0x80000000' : 'CKF_EXTENSION'
     }
 
 def mechanism_list(pin):
@@ -673,18 +700,19 @@ def mechanism_list(pin):
     cdef CK_SESSION_HANDLE session
     cdef CK_ULONG mechanismCount
     cdef CK_MECHANISM_TYPE_PTR mechanisms
+    cdef CK_MECHANISM_INFO mechInfo
 
     soPin = bytearray(str(pin),'utf-8')
 
     rv = functionList.C_OpenSession(slotID, 0x00000004 | 0x00000002, cython.NULL, cython.NULL, &session)
-    print("result 1: ", rvToString(rv))
+    # print("result 1: ", rvToString(rv))
 
     rv = functionList.C_Login(session, 1, soPin, len(soPin))
 
-    print("result 2: ", rvToString(rv))
+    # print("result 2: ", rvToString(rv))
     
-    print("slotID: ",slotID)
-    print("mechanismCount: ",mechanismCount)
+    # print("slotID: ",slotID)
+    # print("mechanismCount: ",mechanismCount)
 
     rv = functionList.C_GetMechanismList(slotID, cython.NULL, &mechanismCount)
 
@@ -692,21 +720,91 @@ def mechanism_list(pin):
     mechanisms = <CK_MECHANISM_TYPE_PTR>malloc(mechanismCount * sizeof(CK_MECHANISM_TYPE))
 
     rv = functionList.C_GetMechanismList(slotID, mechanisms, &mechanismCount)
+    
+    rv = functionList.C_GetMechanismInfo(slotID, mechanisms[13] , &mechInfo) #CK_SLOT_ID slotID, CK_MECHANISM_TYPE type, CK_MECHANISM_INFO_PTR pInfo
+
+    # print("result 3: ", rvToString(rv))
 
     i = 0
     while i < <int>mechanismCount:
-        #print(mechanisms[i])
-        if (mechanisms[i] == 3560050728) or (mechanisms[i] == 3560050730):
-            print(" {}: mechanisms: {:x} ".format( i, mechanisms[i]))
-            i+=1
-        else:
-            print(" {}: mechanisms: {:x} {} ".format( i, mechanisms[i], mech2string[mechanisms[i]]))
-            i+=1
+
+        rv = functionList.C_GetMechanismInfo(slotID, mechanisms[i] , &mechInfo)
+        
+        mflag = hex(mechInfo.flags)
+        #print(mflag)
+        flag = list("0x0000000")
+
+        for j in range(len(list(mflag))):
+            if list(mflag)[j] == "1" or list(mflag)[j] == "2" or list(mflag)[j] == 4 or list(mflag)[j] == "8":
+                flag.insert(j + 10 - len(list(mflag)) ,list(mflag)[j])
+                b = ''.join(flag)
+                
+                #a = (hex(int(''.join(flag),16)))
+                #print(a)
+                print(mechFlag[b] , end=" ")
+                flag = list("0x0000000")
+        print(" ")
+        # print(int(int(mechInfo.flags),16))
+        i+=1
+        
+  
+    # while i < <int>mechanismCount:
+    #     #print(mechanisms[i])
+    #     if (mechanisms[i] == 3560050728) or (mechanisms[i] == 3560050730):
+    #         print(" {}: mechanisms: {:x} ".format( i, mechanisms[i]))
+    #         i+=1
+    #     else:
+    #         print(" {}: mechanisms: {:x} {} ".format( i, mechanisms[i], mech2string[mechanisms[i]]))
+    #         i+=1
         
     
     return rv
 
-
+#     Supported mechanisms:
+#   RSA-PKCS-KEY-PAIR-GEN, keySize={512,2048}, hw, generate_key_pair
+#   RSA-PKCS, keySize={512,2048}, hw, encrypt, decrypt, sign, verify
+#   RSA-X-509, keySize={512,2048}, hw, encrypt, decrypt, sign, verify
+#   RSA-PKCS-OAEP, keySize={512,2048}, hw, encrypt, decrypt
+#   RSA-PKCS-PSS, keySize={512,2048}, hw, sign, verify
+#   MD5-RSA-PKCS, keySize={512,2048}, hw, sign, verify
+#   SHA1-RSA-PKCS, keySize={512,2048}, hw, sign, verify
+#   SHA224-RSA-PKCS, keySize={512,2048}, hw, sign, verify
+#   SHA256-RSA-PKCS, keySize={512,2048}, hw, sign, verify
+#   SHA384-RSA-PKCS, keySize={768,2048}, hw, sign, verify
+#   SHA512-RSA-PKCS, keySize={768,2048}, hw, sign, verify
+#   SHA1-RSA-PKCS-PSS, keySize={512,2048}, hw, sign, verify
+#   SHA224-RSA-PKCS-PSS, keySize={512,2048}, hw, sign, verify
+#   SHA256-RSA-PKCS-PSS, keySize={512,2048}, hw, sign, verify
+#   SHA384-RSA-PKCS-PSS, keySize={768,2048}, hw, sign, verify
+#   SHA512-RSA-PKCS-PSS, keySize={768,2048}, hw, sign, verify
+#   MD5, digest
+#   SHA-1, digest
+#   SHA224, digest
+#   SHA256, digest
+#   SHA384, digest
+#   SHA512, digest
+#   GOSTR3410-KEY-PAIR-GEN, hw, generate_key_pair
+#   GOSTR3410, hw, sign, verify
+#   GOSTR3410-DERIVE, hw, derive
+#   GOSTR3410-512-KEY-PAIR-GEN, hw, generate_key_pair
+#   GOSTR3410_512, hw, sign, verify
+#   GOSTR3410-12-DERIVE, hw, derive
+#   GOSTR3411, hw, digest
+#   GOSTR3411-12-256, hw, digest
+#   GOSTR3411-12-512, hw, digest
+#   GOSTR3410-WITH-GOSTR3411, hw, sign, verify
+#   GOSTR3410-WITH-GOSTR3411-12-256, hw, sign, verify
+#   GOSTR3410-WITH-GOSTR3411-12-512, hw, sign, verify
+#   GOST28147-KEY-WRAP, hw, wrap, unwrap
+#   GOST28147-ECB, hw, encrypt, decrypt
+#   GOST28147, hw, encrypt, decrypt
+#   GOST28147-KEY-GEN, hw, generate
+#   GOST28147-MAC, hw, sign, verify
+#   GOSTR3411-12-256-HMAC, sign, verify
+#   GOSTR3411-12-512-HMAC, sign, verify
+#   GOSTR3411-HMAC, sign, verify
+#   mechtype-0xD4321028, derive
+#   mechtype-0xD432102A, derive
     
 
 
