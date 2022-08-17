@@ -260,12 +260,92 @@ cdef CK_SLOT_ID_PTR slots
 
 
 rvToStrDict = { 
-    0: 'CKR_OK', 
-    1: 'CKR_CANCEL',
-    2: 'CKR_HOST_MEMORY',
-    3: 'CKR_SLOT_ID_INVALID',
-    7: 'CKR_ARGUMENTS_BAD' 
-        }
+    '0x0' : 'CKR_OK', 
+    '0x1' : 'CKR_CANCEL', 
+    '0x2' : 'CKR_HOST_MEMORY', 
+    '0x3' : 'CKR_SLOT_ID_INVALID', 
+    '0x7' : 'CKR_ARGUMENTS_BAD', 
+    '0x8' : 'CKR_NO_EVENT', 
+    '0x9' : 'CKR_NEED_TO_CREATE_THREADS', 
+    '0xa' : 'CKR_CANT_LOCK', 
+    '0x10' : 'CKR_ATTRIBUTE_READ_ONLY', 
+    '0x11' : 'CKR_ATTRIBUTE_SENSITIVE', 
+    '0x12' : 'CKR_ATTRIBUTE_TYPE_INVALID', 
+    '0x13' : 'CKR_ATTRIBUTE_VALUE_INVALID', 
+    '0x20' : 'CKR_DATA_INVALID', 
+    '0x21' : 'CKR_DATA_LEN_RANGE', 
+    '0x30' : 'CKR_DEVICE_ERROR', 
+    '0x31' : 'CKR_DEVICE_MEMORY', 
+    '0x32' : 'CKR_DEVICE_REMOVED', 
+    '0x40' : 'CKR_ENCRYPTED_DATA_INVALID', 
+    '0x41' : 'CKR_ENCRYPTED_DATA_LEN_RANGE', 
+    '0x50' : 'CKR_FUNCTION_CANCELED', 
+    '0x51' : 'CKR_FUNCTION_NOT_PARALLEL', 
+    '0x54' : 'CKR_FUNCTION_NOT_SUPPORTED', 
+    '0x60' : 'CKR_KEY_HANDLE_INVALID', 
+    '0x62' : 'CKR_KEY_SIZE_RANGE', 
+    '0x63' : 'CKR_KEY_TYPE_INCONSISTENT', 
+    '0x64' : 'CKR_KEY_NOT_NEEDED', 
+    '0x65' : 'CKR_KEY_CHANGED', 
+    '0x66' : 'CKR_KEY_NEEDED', 
+    '0x67' : 'CKR_KEY_INDIGESTIBLE', 
+    '0x68' : 'CKR_KEY_FUNCTION_NOT_PERMITTED', 
+    '0x69' : 'CKR_KEY_NOT_WRAPPABLE', 
+    '0x6a' : 'CKR_KEY_UNEXTRACTABLE', 
+    '0x70' : 'CKR_MECHANISM_INVALID', 
+    '0x71' : 'CKR_MECHANISM_PARAM_INVALID', 
+    '0x82' : 'CKR_OBJECT_HANDLE_INVALID', 
+    '0x90' : 'CKR_OPERATION_ACTIVE', 
+    '0x91' : 'CKR_OPERATION_NOT_INITIALIZED', 
+    '0xa0' : 'CKR_PIN_INCORRECT', 
+    '0xa1' : 'CKR_PIN_INVALID', 
+    '0xa2' : 'CKR_PIN_LEN_RANGE', 
+    '0xa3' : 'CKR_PIN_EXPIRED', 
+    '0xa4' : 'CKR_PIN_LOCKED', 
+    '0xb0' : 'CKR_SESSION_CLOSED', 
+    '0xb1' : 'CKR_SESSION_COUNT', 
+    '0xb3' : 'CKR_SESSION_HANDLE_INVALID', 
+    '0xb4' : 'CKR_SESSION_PARALLEL_NOT_SUPPORTED', 
+    '0xb5' : 'CKR_SESSION_READ_ONLY', 
+    '0xb6' : 'CKR_SESSION_EXISTS', 
+    '0xb7' : 'CKR_SESSION_READ_ONLY_EXISTS', 
+    '0xb8' : 'CKR_SESSION_READ_WRITE_SO_EXISTS', 
+    '0xc0' : 'CKR_SIGNATURE_INVALID', 
+    '0xc1' : 'CKR_SIGNATURE_LEN_RANGE', 
+    '0xd0' : 'CKR_TEMPLATE_INCOMPLETE', 
+    '0xd1' : 'CKR_TEMPLATE_INCONSISTENT', 
+    '0xe0' : 'CKR_TOKEN_NOT_PRESENT', 
+    '0xe1' : 'CKR_TOKEN_NOT_RECOGNIZED', 
+    '0xf0' : 'CKR_TOKEN_WRITE_PROTE3NDLE_INVALID', 
+    '0xf1' : 'CKR_UNWRAPPING_KEY_SIZE_RANGE', 
+    '0xf2' : 'CKR_UNWRAPPING_KEY_TYPE_INCONSISTENT', 
+    '0x100' : 'CKR_USER_ALREADY_LOGGED_IN', 
+    '0x101' : 'CKR_USER_NOT_LOGGED_IN', 
+    '0x102' : 'CKR_USER_PIN_NOT_INITIALIZED', 
+    '0x103' : 'CKR_USER_TYPE_INVALID', 
+    '0x104' : 'CKR_USER_ANOTHER_ALREADY_LOGGED_IN', 
+    '0x105' : 'CKR_USER_TOO_MANY_TYPES', 
+    '0x110' : 'CKR_WRAPPED_KEY_INVALID', 
+    '0x112' : 'CKR_WRAPPED_KEY_LEN_RANGE', 
+    '0x113' : 'CKR_WRAPPING_KEY_HANDLE_INVALID', 
+    '0x114' : 'CKR_WRAPPING_KEY_SIZE_RANGE', 
+    '0x115' : 'CKR_WRAPPING_KEY_TYPE_INCONSISTENT', 
+    '0x120' : 'CKR_RANDOM_SEED_NOT_SUPPORTED', 
+    '0x121' : 'CKR_RANDOM_NO_RNG', 
+    '0x130' : 'CKR_DOMAIN_PARAMS_INVALID', 
+    '0x150' : 'CKR_BUFFER_TOO_SMALL', 
+    '0x160' : 'CKR_SAVED_STATE_INVALID', 
+    '0x170' : 'CKR_INFORMATION_SENSITIVE', 
+    '0x180' : 'CKR_STATE_UNSAVEABLE', 
+    '0x190' : 'CKR_CRYPTOKI_NOT_INITIALIZED', 
+    '0x191' : 'CKR_CRYPTOKI_ALREADY_INITIALIZED', 
+    '0x1a0' : 'CKR_MUTEX_BAD', 
+    '0x1a1' : 'CKR_MUTEX_NOT_LOCKED', 
+    '0x1b0' : 'CKR_NEW_PIN_MODE', 
+    '0x1b1' : 'CKR_NEXT_OTP', 
+    '0x200' : 'CKR_FUNCTION_REJECTED', 
+    '0x80000000' : 'CKR_VENDOR_DEFINED'
+    }
 
 def rvToString(rv):
     return rvToStrDict[rv]
@@ -310,13 +390,15 @@ def init_pkcs11(path):
     cdef CK_RV rv2
     rv2 = getFunctionListEx(&functionListEx)
 
+    if rv2 != 0:
+        raise Pkcs11Exception("getFunctionListEx: {:s}".format(rvToString(rv2)))
+
+
     cdef CK_RV rv3
     rv3 = functionListI.C_Initialize(&initArgs)
     if rv3 != 0:
-        raise Pkcs11Exception("C_Initialize")
+        raise Pkcs11Exception("C_Initialize: {:s}".format(rvToString(rv3)))
 
-
-    print( <uintptr_t> functionListI)
     return <uintptr_t> functionListI
 
 def free_pkcs11(functioniListUIP):
@@ -327,13 +409,14 @@ def free_pkcs11(functioniListUIP):
   errorCode = 1
 
   rv = functionListI.C_Finalize(cython.NULL)
-  
+  if rv != 0:
+    raise Pkcs11Exception("C_Finalize: {:s}".format(rvToString(rv)))
+
   return errorCode
 
-def get_slots_list(functioniListUIP):
+def get_slots_list(functionListUIP):
 
-  cdef CK_FUNCTION_LIST_PTR functionListI = <CK_FUNCTION_LIST_PTR><uintptr_t> functioniListUIP
-  print( <uintptr_t> functionListI)
+  cdef CK_FUNCTION_LIST_PTR functionListI = <CK_FUNCTION_LIST_PTR><uintptr_t> functionListUIP
 
   cdef CK_SLOT_ID_PTR slotsI
  
@@ -345,11 +428,12 @@ def get_slots_list(functioniListUIP):
 
   slotCountPtr[0]=12345
 
-  print(" Slots available: ", <CK_ULONG>slotCount)
-  #print("cython.NULL: ", <uintptr_t>cython.NULL)
+#   print(" Slots available: ", <CK_ULONG>slotCount)
 
   rv1 =  functionListI.C_GetSlotList(1, cython.NULL, slotCountPtr)
-  print("result: ", rvToString(rv1))
+
+  if rv1 != 0:
+    raise Pkcs11Exception("C_GetSlotList: {:s}".format(rvToString(rv1)))
 
   print(" Slots available: ", <CK_ULONG>slotCount)
 
@@ -367,7 +451,7 @@ def get_slots_list(functioniListUIP):
 
 def format_token(slotsII):
  
-    cdef CK_SLOT_ID slot = slotsII
+    cdef CK_SLOT_ID slot = slotsII[0]
     
 
     #print("---" + int(slot))
@@ -399,12 +483,12 @@ def format_token(slotsII):
 
 
     rv1 = functionListEx.C_EX_InitToken(slot, soPin, len(soPin), &initParam)
-    print("result: ", rvToString(rv1))
+    if rv1 != 0:
+        raise Pkcs11Exception("C_EX_InitToken: {:s}".format(rvToString(rv1)))
     
     errorCode = 0
     printf("Token has been initialized successfully.\n")
 
-    return rv1
 
 mech2string = {
     0x00000000 : 'CKM_RSA_PKCS_KEY_PAIR_GEN', 
@@ -704,14 +788,17 @@ mechFlag = {
     '0x80000000' : 'CKF_EXTENSION'
     }
 
-def mechanism_list(pin):
+def mechanism_list(pin,slotsII,functionListUIP):
 
     cdef CK_RV rv
+    cdef CK_RV rv2
 
-    cdef CK_MECHANISM_TYPE mech = 0x00001220
+    cdef CK_SLOT_ID slotID = slotsII[0]
 
-    cdef CK_SLOT_ID slotID = slots[0]
+    cdef CK_FUNCTION_LIST_PTR functionListI = <CK_FUNCTION_LIST_PTR><uintptr_t> functionListUIP
 
+    print(slotID)
+    
     cdef CK_SESSION_HANDLE session
     cdef CK_ULONG mechanismCount
     cdef CK_MECHANISM_TYPE_PTR mechanisms
@@ -719,46 +806,52 @@ def mechanism_list(pin):
 
     soPin = bytearray(str(pin),'utf-8')
 
-    rv = functionList.C_OpenSession(slotID, 0x00000004 | 0x00000002, cython.NULL, cython.NULL, &session)
+    # rv = functionListI.C_OpenSession(slotID, 0x00000004 | 0x00000002, cython.NULL, cython.NULL, &session)
+    # if rv != 0:
+    #     raise Pkcs11Exception("C_OpenSession: {:h}".format(rvToString(rv)))
+        
+    # rv = functionListI.C_Login(session, 1, soPin, len(soPin))
+    # if rv != 0:
+    #     raise Pkcs11Exception(f"C_Login: {hex(rv)}")
 
-    rv = functionList.C_Login(session, 1, soPin, len(soPin))
-    rv = functionList.C_GetMechanismList(slotID, cython.NULL, &mechanismCount)
+    rv = functionListI.C_GetMechanismList(slotID, cython.NULL, &mechanismCount)
+    if rv != 0:
+        raise Pkcs11Exception("C_GetMechanismList: {:s}".format(rvToString(rv)))
 
     mechanisms = <CK_MECHANISM_TYPE_PTR>malloc(mechanismCount * sizeof(CK_MECHANISM_TYPE))
 
-    rv = functionList.C_GetMechanismList(slotID, mechanisms, &mechanismCount)
-    
-    rv = functionList.C_GetMechanismInfo(slotID, mechanisms[13] , &mechInfo) #CK_SLOT_ID slotID, CK_MECHANISM_TYPE type, CK_MECHANISM_INFO_PTR pInfo
+    rv = functionListI.C_GetMechanismList(slotID, mechanisms, &mechanismCount)
+    if rv != 0:
+        raise Pkcs11Exception("C_GetMechanismList: {:s}".format(rvToString(rv)))
 
+    rv = functionListI.C_GetMechanismInfo(slotID, mechanisms[13] , &mechInfo) #CK_SLOT_ID slotID, CK_MECHANISM_TYPE type, CK_MECHANISM_INFO_PTR pInfo
+    if rv != 0:
+        raise Pkcs11Exception("C_GetMechanismInfo: {:s}".format(rvToString(rv)))
     i = 0
+    expMechInfo = []
+
     while i < <int>mechanismCount:
 
-        rv = functionList.C_GetMechanismInfo(slotID, mechanisms[i] , &mechInfo)
+        rv = functionListI.C_GetMechanismInfo(slotID, mechanisms[i] , &mechInfo)
 
-        print(f" {i}: mechanisms: {mech2string[mechanisms[i]]}, keySize= ({mechInfo.ulMinKeySize},{mechInfo.ulMaxKeySize}), ", end=" ")
+
+        # print(f" {i}: mechanisms: {mech2string[mechanisms[i]]}, keySize= ({mechInfo.ulMinKeySize},{mechInfo.ulMaxKeySize}), ", end=" ")
     
-        mflag = bin(mechInfo.flags)
+        mFlag = bin(mechInfo.flags)
+        listFlag = []
         
-        for j in range(len(list(mflag))):
-            if list(mflag)[j] == "1":
-                bFlag = ("1" + ("0" * (len(list(mflag)) - j - 1)) )
-                print(mechFlag[hex(int(bFlag, 2))] , end=" ")
+        for j in range(len(list(mFlag))):
+            if list(mFlag)[j] == "1":
+                bFlag = ("1" + ("0" * (len(list(mFlag)) - j - 1)) )
+                listFlag.append(mechFlag[hex(int(bFlag, 2))])
+                # print(mechFlag[hex(int(bFlag, 2))] , end=" ")
 
-        print(" ")
+        expMechInfo.append(str(i) + " mechanisms: " + str(mech2string[mechanisms[i]]) + " ,  keySize= (" + str(mechInfo.ulMinKeySize) + "," + str(mechInfo.ulMaxKeySize)+ "),  " 
+        + " ".join(listFlag) )
+        # print(" ")
         i+=1
-        
-  
-    # while i < <int>mechanismCount:
-    #     #print(mechanisms[i])
-    #     if (mechanisms[i] == 3560050728) or (mechanisms[i] == 3560050730):
-    #         print(" {}: mechanisms: {:x} ".format( i, mechanisms[i]))
-    #         i+=1
-    #     else:
-    #         print(" {}: mechanisms: {:x} {} ".format( i, mechanisms[i], mech2string[mechanisms[i]]))
-    #         i+=1
-        
     
-    return rv
+    return expMechInfo
 
 
 
