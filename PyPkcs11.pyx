@@ -4,6 +4,9 @@ import cython
 from libc.stdlib cimport malloc
 from libc.stdio cimport printf
 
+class Pkcs11Exception(Exception):
+    pass
+
 
 cdef extern from "stdint.h":
     ctypedef unsigned long long uintptr_t
@@ -250,10 +253,8 @@ cdef extern:
         CK_ULONG    ulMaxKeySize
         CK_FLAGS    flags
 
-cdef CK_FUNCTION_LIST_PTR functionList
 cdef CK_FUNCTION_LIST_EXTENDED_PTR functionListEx
 cdef CK_FUNCTION_LIST cfl
-cdef CK_SLOT_ID_PTR slots
 
 rvToStrDict = { 
     0: 'CKR_OK', 
@@ -270,6 +271,8 @@ def rvToString(rv):
 def init_pkcs11(path):
 
     print("Entering init_pkcs11")
+
+    cdef CK_FUNCTION_LIST_PTR functionListI
 
     cdef CK_C_INITIALIZE_ARGS initArgs
     initArgs = CK_C_INITIALIZE_ARGS(
@@ -297,20 +300,23 @@ def init_pkcs11(path):
     print("getFunctionListEx= ", <uintptr_t>getFunctionListEx)
 
     cdef CK_RV rv1
-    rv1 = getFunctionList(&functionList)
+    rv1 = getFunctionList(&functionListI)
+    if rv1 != 0:
+        raise Pkcs11Exception("getFunctionList: {:s}".format(rvToString(rv1)))
 
     cdef CK_RV rv2
     rv2 = getFunctionListEx(&functionListEx)
 
     cdef CK_RV rv3
-    rv3 = functionList.C_Initialize(&initArgs)
+    rv3 = functionListI.C_Initialize(&initArgs)
+    if rv3 != 0:
+        raise Pkcs11Exception("C_Initialize")
 
+    return <uintptr_t> functionListI
 
+def free_pkcs11(functioniListUIP):
 
-    
-    return rv1,rv3
-
-def free_pkcs11():
+  cdef CK_FUNCTION_LIST_PTR functionList = <CK_FUNCTION_LIST_PTR> functioniListUIP
   
   cdef CK_RV rv1
   errorCode = 1
@@ -319,7 +325,11 @@ def free_pkcs11():
   
   return errorCode
 
-def get_slots_list():
+def get_slots_list(functioniListUIP):
+
+  cdef CK_FUNCTION_LIST_PTR functionList = <CK_FUNCTION_LIST_PTR> functioniListUIP
+
+  cdef CK_SLOT_ID_PTR slots
 
  
   cdef CK_SLOT_ID_PTR *slots_ptr = &slots
@@ -346,9 +356,11 @@ def get_slots_list():
 
 
   rv2 =  functionList.C_GetSlotList(1, slots_ptr[0], slotCountPtr)
+  if rv2 != 0:
+      raise Pkcs11Exception("getSlotList: {:s}".format(rvToString(rv2)))
   #print(" C_GetSlotList: ", <CK_ULONG>rv2)
 
-  return rv1, rv2
+  return <uintptr_t>slots
 
 def format_token():
  

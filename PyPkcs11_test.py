@@ -1,9 +1,11 @@
 #!/usr/bin/python3
 import PyPkcs11
 
-rvs = PyPkcs11.init_pkcs11("./librtpkcs11ecp.so")
+functionListUIP = PyPkcs11.init_pkcs11("./librtpkcs11ecp.so")
 
-rvs1 = PyPkcs11.get_slots_list()
+slotsUIP = PyPkcs11.get_slots_list(functionListUIP)
+
+quit()
 
 # rvs2 = PyPkcs11.format_token()
 pin = 12345678
