@@ -667,25 +667,25 @@ mech2string = {
     }
 
 mechFlag = {
-    '0x00000001' : 'CKF_HW', 
-    '0x00000100' : 'CKF_ENCRYPT', 
-    '0x00000200' : 'CKF_DECRYPT', 
-    '0x00000400' : 'CKF_DIGEST', 
-    '0x00000800' : 'CKF_SIGN', 
-    '0x00001000' : 'CKF_SIGN_RECOVER', 
-    '0x00002000' : 'CKF_VERIFY', 
-    '0x00004000' : 'CKF_VERIFY_RECOVER', 
-    '0x00008000' : 'CKF_GENERATE', 
-    '0x00010000'  : 'CKF_GENERATE_KEY_PAIR', 
-    '0x00020000' : 'CKF_WRAP', 
-    '0x00040000' : 'CKF_UNWRAP', 
-    '0x00080000' : 'CKF_DERIVE', 
-    '0x00100000' : 'CKF_EC_F_P', 
-    '0x00200000' : 'CKF_EC_F_2M', 
-    '0x00400000' : 'CKF_EC_ECPARAMETERS', 
-    '0x00800000' : 'CKF_EC_NAMEDCURVE', 
-    '0x01000000' : 'CKF_EC_UNCOMPRESS', 
-    '0x02000000' : 'CKF_EC_COMPRESS', 
+    '0x1' : 'CKF_HW', 
+    '0x100' : 'CKF_ENCRYPT', 
+    '0x200' : 'CKF_DECRYPT', 
+    '0x400' : 'CKF_DIGEST', 
+    '0x800' : 'CKF_SIGN', 
+    '0x1000' : 'CKF_SIGN_RECOVER', 
+    '0x2000' : 'CKF_VERIFY', 
+    '0x4000' : 'CKF_VERIFY_RECOVER', 
+    '0x8000' : 'CKF_GENERATE', 
+    '0x10000'  : 'CKF_GENERATE_KEY_PAIR', 
+    '0x20000' : 'CKF_WRAP', 
+    '0x40000' : 'CKF_UNWRAP', 
+    '0x80000' : 'CKF_DERIVE', 
+    '0x100000' : 'CKF_EC_F_P', 
+    '0x200000' : 'CKF_EC_F_2M', 
+    '0x400000' : 'CKF_EC_ECPARAMETERS', 
+    '0x800000' : 'CKF_EC_NAMEDCURVE', 
+    '0x1000000' : 'CKF_EC_UNCOMPRESS', 
+    '0x2000000' : 'CKF_EC_COMPRESS', 
     '0x80000000' : 'CKF_EXTENSION'
     }
 
@@ -705,17 +705,9 @@ def mechanism_list(pin):
     soPin = bytearray(str(pin),'utf-8')
 
     rv = functionList.C_OpenSession(slotID, 0x00000004 | 0x00000002, cython.NULL, cython.NULL, &session)
-    # print("result 1: ", rvToString(rv))
 
     rv = functionList.C_Login(session, 1, soPin, len(soPin))
-
-    # print("result 2: ", rvToString(rv))
-    
-    # print("slotID: ",slotID)
-    # print("mechanismCount: ",mechanismCount)
-
     rv = functionList.C_GetMechanismList(slotID, cython.NULL, &mechanismCount)
-
 
     mechanisms = <CK_MECHANISM_TYPE_PTR>malloc(mechanismCount * sizeof(CK_MECHANISM_TYPE))
 
@@ -723,28 +715,21 @@ def mechanism_list(pin):
     
     rv = functionList.C_GetMechanismInfo(slotID, mechanisms[13] , &mechInfo) #CK_SLOT_ID slotID, CK_MECHANISM_TYPE type, CK_MECHANISM_INFO_PTR pInfo
 
-    # print("result 3: ", rvToString(rv))
-
     i = 0
     while i < <int>mechanismCount:
 
         rv = functionList.C_GetMechanismInfo(slotID, mechanisms[i] , &mechInfo)
-        
-        mflag = hex(mechInfo.flags)
-        #print(mflag)
-        flag = list("0x0000000")
 
+        print(f" {i}: mechanisms: {mech2string[mechanisms[i]]}, keySize= ({mechInfo.ulMinKeySize},{mechInfo.ulMaxKeySize}), ", end=" ")
+    
+        mflag = bin(mechInfo.flags)
+        
         for j in range(len(list(mflag))):
-            if list(mflag)[j] == "1" or list(mflag)[j] == "2" or list(mflag)[j] == 4 or list(mflag)[j] == "8":
-                flag.insert(j + 10 - len(list(mflag)) ,list(mflag)[j])
-                b = ''.join(flag)
-                
-                #a = (hex(int(''.join(flag),16)))
-                #print(a)
-                print(mechFlag[b] , end=" ")
-                flag = list("0x0000000")
+            if list(mflag)[j] == "1":
+                bFlag = ("1" + ("0" * (len(list(mflag)) - j - 1)) )
+                print(mechFlag[hex(int(bFlag, 2))] , end=" ")
+
         print(" ")
-        # print(int(int(mechInfo.flags),16))
         i+=1
         
   
@@ -760,51 +745,6 @@ def mechanism_list(pin):
     
     return rv
 
-#     Supported mechanisms:
-#   RSA-PKCS-KEY-PAIR-GEN, keySize={512,2048}, hw, generate_key_pair
-#   RSA-PKCS, keySize={512,2048}, hw, encrypt, decrypt, sign, verify
-#   RSA-X-509, keySize={512,2048}, hw, encrypt, decrypt, sign, verify
-#   RSA-PKCS-OAEP, keySize={512,2048}, hw, encrypt, decrypt
-#   RSA-PKCS-PSS, keySize={512,2048}, hw, sign, verify
-#   MD5-RSA-PKCS, keySize={512,2048}, hw, sign, verify
-#   SHA1-RSA-PKCS, keySize={512,2048}, hw, sign, verify
-#   SHA224-RSA-PKCS, keySize={512,2048}, hw, sign, verify
-#   SHA256-RSA-PKCS, keySize={512,2048}, hw, sign, verify
-#   SHA384-RSA-PKCS, keySize={768,2048}, hw, sign, verify
-#   SHA512-RSA-PKCS, keySize={768,2048}, hw, sign, verify
-#   SHA1-RSA-PKCS-PSS, keySize={512,2048}, hw, sign, verify
-#   SHA224-RSA-PKCS-PSS, keySize={512,2048}, hw, sign, verify
-#   SHA256-RSA-PKCS-PSS, keySize={512,2048}, hw, sign, verify
-#   SHA384-RSA-PKCS-PSS, keySize={768,2048}, hw, sign, verify
-#   SHA512-RSA-PKCS-PSS, keySize={768,2048}, hw, sign, verify
-#   MD5, digest
-#   SHA-1, digest
-#   SHA224, digest
-#   SHA256, digest
-#   SHA384, digest
-#   SHA512, digest
-#   GOSTR3410-KEY-PAIR-GEN, hw, generate_key_pair
-#   GOSTR3410, hw, sign, verify
-#   GOSTR3410-DERIVE, hw, derive
-#   GOSTR3410-512-KEY-PAIR-GEN, hw, generate_key_pair
-#   GOSTR3410_512, hw, sign, verify
-#   GOSTR3410-12-DERIVE, hw, derive
-#   GOSTR3411, hw, digest
-#   GOSTR3411-12-256, hw, digest
-#   GOSTR3411-12-512, hw, digest
-#   GOSTR3410-WITH-GOSTR3411, hw, sign, verify
-#   GOSTR3410-WITH-GOSTR3411-12-256, hw, sign, verify
-#   GOSTR3410-WITH-GOSTR3411-12-512, hw, sign, verify
-#   GOST28147-KEY-WRAP, hw, wrap, unwrap
-#   GOST28147-ECB, hw, encrypt, decrypt
-#   GOST28147, hw, encrypt, decrypt
-#   GOST28147-KEY-GEN, hw, generate
-#   GOST28147-MAC, hw, sign, verify
-#   GOSTR3411-12-256-HMAC, sign, verify
-#   GOSTR3411-12-512-HMAC, sign, verify
-#   GOSTR3411-HMAC, sign, verify
-#   mechtype-0xD4321028, derive
-#   mechtype-0xD432102A, derive
-    
+
 
 
