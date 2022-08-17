@@ -255,6 +255,9 @@ cdef extern:
 
 cdef CK_FUNCTION_LIST_EXTENDED_PTR functionListEx
 cdef CK_FUNCTION_LIST cfl
+cdef CK_FUNCTION_LIST_PTR functionList
+cdef CK_SLOT_ID_PTR slots
+
 
 rvToStrDict = { 
     0: 'CKR_OK', 
@@ -312,28 +315,28 @@ def init_pkcs11(path):
     if rv3 != 0:
         raise Pkcs11Exception("C_Initialize")
 
+
+    print( <uintptr_t> functionListI)
     return <uintptr_t> functionListI
 
 def free_pkcs11(functioniListUIP):
 
-  cdef CK_FUNCTION_LIST_PTR functionList = <CK_FUNCTION_LIST_PTR> functioniListUIP
+  cdef CK_FUNCTION_LIST_PTR functionListI = <CK_FUNCTION_LIST_PTR> functioniListUIP
   
   cdef CK_RV rv1
   errorCode = 1
 
-  rv = functionList.C_Finalize(cython.NULL)
+  rv = functionListI.C_Finalize(cython.NULL)
   
   return errorCode
 
 def get_slots_list(functioniListUIP):
 
-  cdef CK_FUNCTION_LIST_PTR functionList = <CK_FUNCTION_LIST_PTR> functioniListUIP
+  cdef CK_FUNCTION_LIST_PTR functionListI = <CK_FUNCTION_LIST_PTR><uintptr_t> functioniListUIP
+  print( <uintptr_t> functionListI)
 
-  cdef CK_SLOT_ID_PTR slots
-
+  cdef CK_SLOT_ID_PTR slotsI
  
-  cdef CK_SLOT_ID_PTR *slots_ptr = &slots
-
   cdef CK_ULONG slotCount
   cdef CK_ULONG_PTR slotCountPtr = &slotCount
 
@@ -345,26 +348,26 @@ def get_slots_list(functioniListUIP):
   print(" Slots available: ", <CK_ULONG>slotCount)
   #print("cython.NULL: ", <uintptr_t>cython.NULL)
 
-  rv1 =  functionList.C_GetSlotList(1, cython.NULL, slotCountPtr)
+  rv1 =  functionListI.C_GetSlotList(1, cython.NULL, slotCountPtr)
   print("result: ", rvToString(rv1))
 
   print(" Slots available: ", <CK_ULONG>slotCount)
 
 
 
-  slots_ptr[0] = <CK_SLOT_ID_PTR> malloc(slotCount * sizeof(CK_SLOT_ID))
+  slotsI = <CK_SLOT_ID_PTR> malloc(slotCount * sizeof(CK_SLOT_ID))
 
 
-  rv2 =  functionList.C_GetSlotList(1, slots_ptr[0], slotCountPtr)
+
+  rv2 =  functionListI.C_GetSlotList(1, slotsI, slotCountPtr)
   if rv2 != 0:
       raise Pkcs11Exception("getSlotList: {:s}".format(rvToString(rv2)))
   #print(" C_GetSlotList: ", <CK_ULONG>rv2)
+  return [slotsI[i] for i in range(slotCount)]
 
-  return <uintptr_t>slots
-
-def format_token():
+def format_token(slotsII):
  
-    cdef CK_SLOT_ID slot = slots[0]
+    cdef CK_SLOT_ID slot = slotsII
     
 
     #print("---" + int(slot))
