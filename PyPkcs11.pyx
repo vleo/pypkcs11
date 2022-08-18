@@ -870,7 +870,23 @@ keyTypes = {
     "CKK_GOST28147"  : 0x00000032
     }
 
-def gen_key_pair(slotsII,pin,functionListUIP, pkTemplate):
+attTypes = {
+    0 : 0x00000000,
+    1 : 0x00000102,
+    2: 0x00000100,
+    3 : 0x00000001,
+    4 : 0x00000002,
+    5 : 0x00000250,
+    6 : 0x00000251
+}
+voidPTR = {
+
+}
+vLen = {
+
+}
+
+def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
 
     cdef CK_SESSION_HANDLE session
     cdef CK_RV rv
@@ -887,34 +903,74 @@ def gen_key_pair(slotsII,pin,functionListUIP, pkTemplate):
     if rv != 0:
         raise Pkcs11Exception(f"C_Login: {hex(rv)}")
 
-    cdef CK_KEY_TYPE keyTypeGostR3410_2012_256 = keyTypes("CKK_GOSTR3410")
-
-    cdef keyPairIdGost2012_256 = bytearray("xyzzy", 'utf-8')
-    #keyPairIdGost2012_256 = b"GOST R 34.10-2012 (256 bits) sample key pair ID (Aktiv Co.)"
-
-
-    cdef CK_BYTE parametersGostR3410_2012_256 = {0x06, 0x07, 0x2a, 0x85, 0x03, 0x02, 0x02, 0x23, 0x01}
-    cdef CK_BYTE parametersGostR3411_2012_256 = {0x06, 0x08, 0x2a, 0x85, 0x03, 0x07, 0x01, 0x01, 0x02, 0x02}
-    cdef CK_BBOOL attributeTrue = 1
-    cdef CK_BBOOL attributeFalse = 0
 
     cdef CK_OBJECT_CLASS publicKeyObject = 0x00000002
+    cdef CK_VOID_PTR pkoAdr = &publicKeyObject
+    voidPTR[0] =  <uintptr_t>pkoAdr
+    vLen[0] = sizeof(publicKeyObject)
 
-    cdef CK_ATTRIBUTE publicKeyTemplate
-    cdef CK_ATTRIBUTE e1 
-    e1.type = 0x00000000
-    e1.pValue = publicKeyObject
-    e1.ulValueLen = sizeof(publicKeyObject)
+    cdef keyPairIdGost2012_256 = bytearray("GOST R 34.10-2012 (256 bits) sample key pair ID (Aktiv Co.)")
+    voidPTR[1] = keyPairIdGost2012_256
+    vLen[1] = sizeof(keyPairIdGost2012_256) - 1
 
-    publicKeyTemplate = CK_ATTRIBUTE(
-        ( 0x00000000, publicKeyObject, sizeof(publicKeyObject)),
-        ( 0x00000102, <char*>keyPairIdGost2012_256, sizeof(keyPairIdGost2012_256) - 1 ),
-		( 0x00000100, &keyTypeGostR3410_2012_256, sizeof(keyTypeGostR3410_2012_256) ),
-		( 0x00000001, &attributeTrue, sizeof(attributeTrue)),
-		( 0x00000002, &attributeFalse, sizeof(attributeFalse)),
-		( 0x00000250, parametersGostR3410_2012_256, sizeof(parametersGostR3410_2012_256) ),
-		( 0x00000251, parametersGostR3411_2012_256, sizeof(parametersGostR3411_2012_256) )
-    )
+    cdef CK_KEY_TYPE keyTypeGostR3410_2012_256 = keyTypes["CKK_GOSTR3410"]
+    voidPTR[2] = keyTypeGostR3410_2012_256
+    vLen[2] = sizeof(keyTypeGostR3410_2012_256)
+
+    cdef CK_BBOOL attributeTrue = 1
+    voidPTR[3] = attributeTrue
+    vLen[3] = sizeof(attributeTrue)
+
+    cdef CK_BBOOL attributeFalse = 0
+    voidPTR[4] = attributeFalse
+    vLen[4] = sizeof(attributeFalse)
+
+    #keyPairIdGost2012_256 = b"GOST R 34.10-2012 (256 bits) sample key pair ID (Aktiv Co.)"
+    exit(0)
+    pgR3410_2012_256 = [0x06, 0x07, 0x2a, 0x85, 0x03, 0x02, 0x02, 0x23, 0x01]
+    cdef CK_BYTE parametersGostR3410_2012_256[9]
+    for i in range(9):
+        parametersGostR3410_2012_256[i] = pgR3410_2012_256[i]
+
+    voidPTR[5] = parametersGostR3410_2012_256
+    vLen[5] = sizeof(parametersGostR3410_2012_256)
+
+    pgR3411_2012_256 = [0x06, 0x08, 0x2a, 0x85, 0x03, 0x07, 0x01, 0x01, 0x02, 0x02]
+    cdef CK_BYTE parametersGostR3411_2012_256[10]
+    for i in range(10):
+        parametersGostR3411_2012_256[i] = pgR3411_2012_256[i]
+    voidPTR[6] = parametersGostR3411_2012_256
+    vLen[6] = sizeof(parametersGostR3411_2012_256)
+
+
+    cdef CK_ATTRIBUTE publicKeyTemplate[7][3]
+
+    for i in range(6):
+        print(i)
+        publicKeyTemplate[i].type = 0x00000000
+        publicKeyTemplate[i].pValue = &voidPTR[i]
+        publicKeyTemplate[i].ulValueLen  = vLen[i]
+
+
+
+
+    # cdef CK_OBJECT_CLASS publicKeyObject = 0x00000002
+    #
+    # cdef CK_ATTRIBUTE publicKeyTemplate
+    # cdef CK_ATTRIBUTE e1
+    # e1.type = 0x00000000
+    # e1.pValue = publicKeyObject
+    # e1.ulValueLen = sizeof(publicKeyObject)
+    #
+    # publicKeyTemplate = CK_ATTRIBUTE(
+    #     ( 0x00000000, publicKeyObject, sizeof(publicKeyObject)),
+    #     ( 0x00000102, <char*>keyPairIdGost2012_256, sizeof(keyPairIdGost2012_256) - 1 ),
+	# 	( 0x00000100, &keyTypeGostR3410_2012_256, sizeof(keyTypeGostR3410_2012_256) ),
+	# 	( 0x00000001, &attributeTrue, sizeof(attributeTrue)),
+	# 	( 0x00000002, &attributeFalse, sizeof(attributeFalse)),
+	# 	( 0x00000250, parametersGostR3410_2012_256, sizeof(parametersGostR3410_2012_256) ),
+	# 	( 0x00000251, parametersGostR3411_2012_256, sizeof(parametersGostR3411_2012_256) )
+    # )
 
     # cdef CK_C_INITIALIZE_ARGS initArgs
     # initArgs = CK_C_INITIALIZE_ARGS(
