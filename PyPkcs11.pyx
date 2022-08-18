@@ -254,9 +254,9 @@ cdef extern:
         CK_FLAGS    flags
 
 cdef CK_FUNCTION_LIST_EXTENDED_PTR functionListEx
-cdef CK_FUNCTION_LIST cfl
-cdef CK_FUNCTION_LIST_PTR functionList
-cdef CK_SLOT_ID_PTR slots
+# cdef CK_FUNCTION_LIST cfl
+# cdef CK_FUNCTION_LIST_PTR functionList
+# cdef CK_SLOT_ID_PTR slots
 
 
 rvToStrDict = { 
@@ -356,6 +356,7 @@ def init_pkcs11(path):
     print("Entering init_pkcs11")
 
     cdef CK_FUNCTION_LIST_PTR functionListI
+    cdef CK_FUNCTION_LIST_EXTENDED_PTR functionListExI
 
     cdef CK_C_INITIALIZE_ARGS initArgs
     initArgs = CK_C_INITIALIZE_ARGS(
@@ -385,21 +386,20 @@ def init_pkcs11(path):
     cdef CK_RV rv1
     rv1 = getFunctionList(&functionListI)
     if rv1 != 0:
-        raise Pkcs11Exception("getFunctionList: {:s}".format(rvToString(rv1)))
+        raise Pkcs11Exception(f"getFunctionList: {hex(rv1)}")
 
     cdef CK_RV rv2
-    rv2 = getFunctionListEx(&functionListEx)
-
+    rv2 = getFunctionListEx(&functionListExI)
     if rv2 != 0:
-        raise Pkcs11Exception("getFunctionListEx: {:s}".format(rvToString(rv2)))
+        raise Pkcs11Exception(f"getFunctionListEx: {hex(rv2)}")
 
 
     cdef CK_RV rv3
     rv3 = functionListI.C_Initialize(&initArgs)
     if rv3 != 0:
-        raise Pkcs11Exception("C_Initialize: {:s}".format(rvToString(rv3)))
+        raise Pkcs11Exception(f"C_Initialize: {hex(rv3)}")
 
-    return <uintptr_t> functionListI
+    return <uintptr_t> functionListI , <uintptr_t> functionListExI
 
 def free_pkcs11(functioniListUIP):
 
@@ -410,7 +410,7 @@ def free_pkcs11(functioniListUIP):
 
   rv = functionListI.C_Finalize(cython.NULL)
   if rv != 0:
-    raise Pkcs11Exception("C_Finalize: {:s}".format(rvToString(rv)))
+    raise Pkcs11Exception(f"C_Finalize: {hex(rv)}")
 
   return errorCode
 
@@ -431,9 +431,8 @@ def get_slots_list(functionListUIP):
 #   print(" Slots available: ", <CK_ULONG>slotCount)
 
   rv1 =  functionListI.C_GetSlotList(1, cython.NULL, slotCountPtr)
-
   if rv1 != 0:
-    raise Pkcs11Exception("C_GetSlotList: {:s}".format(rvToString(rv1)))
+    raise Pkcs11Exception(f"C_GetSlotList: {hex(rv1)}")
 
   print(" Slots available: ", <CK_ULONG>slotCount)
 
@@ -445,12 +444,13 @@ def get_slots_list(functionListUIP):
 
   rv2 =  functionListI.C_GetSlotList(1, slotsI, slotCountPtr)
   if rv2 != 0:
-      raise Pkcs11Exception("getSlotList: {:s}".format(rvToString(rv2)))
+      raise Pkcs11Exception(f"C_GetSlotList: {hex(rv2)}")
   #print(" C_GetSlotList: ", <CK_ULONG>rv2)
   return [slotsI[i] for i in range(slotCount)]
 
-def format_token(slotsII):
- 
+def format_token(slotsII,functionListExUIP):
+    
+    cdef CK_FUNCTION_LIST_EXTENDED_PTR functionListExI = <CK_FUNCTION_LIST_EXTENDED_PTR><uintptr_t> functionListExUIP
     cdef CK_SLOT_ID slot = slotsII[0]
     
 
@@ -482,12 +482,11 @@ def format_token(slotsII):
     initParam.ulSmMode = 0
 
 
-    rv1 = functionListEx.C_EX_InitToken(slot, soPin, len(soPin), &initParam)
+    rv1 = functionListExI.C_EX_InitToken(slot, soPin, len(soPin), &initParam)
     if rv1 != 0:
-        raise Pkcs11Exception("C_EX_InitToken: {:s}".format(rvToString(rv1)))
+        raise Pkcs11Exception(f"C_EX_InitToken: {hex(rv1)}")
     
-    errorCode = 0
-    printf("Token has been initialized successfully.\n")
+    printf("Token has been formatted successfully.\n")
 
 
 mech2string = {
@@ -788,7 +787,7 @@ mechFlag = {
     '0x80000000' : 'CKF_EXTENSION'
     }
 
-def mechanism_list(pin,slotsII,functionListUIP):
+def mechanism_list(slotsII,functionListUIP):
 
     cdef CK_RV rv
     cdef CK_RV rv2
@@ -797,18 +796,18 @@ def mechanism_list(pin,slotsII,functionListUIP):
 
     cdef CK_FUNCTION_LIST_PTR functionListI = <CK_FUNCTION_LIST_PTR><uintptr_t> functionListUIP
 
-    print(slotID)
+    # print(slotID)
     
-    cdef CK_SESSION_HANDLE session
+    # cdef CK_SESSION_HANDLE session
     cdef CK_ULONG mechanismCount
     cdef CK_MECHANISM_TYPE_PTR mechanisms
     cdef CK_MECHANISM_INFO mechInfo
 
-    soPin = bytearray(str(pin),'utf-8')
+    # soPin = bytearray(str(pin),'utf-8')
 
     # rv = functionListI.C_OpenSession(slotID, 0x00000004 | 0x00000002, cython.NULL, cython.NULL, &session)
     # if rv != 0:
-    #     raise Pkcs11Exception("C_OpenSession: {:h}".format(rvToString(rv)))
+    #     raise Pkcs11Exception(f"C_OpenSession: {hex(rv)}")
         
     # rv = functionListI.C_Login(session, 1, soPin, len(soPin))
     # if rv != 0:
@@ -816,25 +815,26 @@ def mechanism_list(pin,slotsII,functionListUIP):
 
     rv = functionListI.C_GetMechanismList(slotID, cython.NULL, &mechanismCount)
     if rv != 0:
-        raise Pkcs11Exception("C_GetMechanismList: {:s}".format(rvToString(rv)))
+        raise Pkcs11Exception(f"C_GetMechanismList: {hex(rv)}")
 
     mechanisms = <CK_MECHANISM_TYPE_PTR>malloc(mechanismCount * sizeof(CK_MECHANISM_TYPE))
 
     rv = functionListI.C_GetMechanismList(slotID, mechanisms, &mechanismCount)
     if rv != 0:
-        raise Pkcs11Exception("C_GetMechanismList: {:s}".format(rvToString(rv)))
+        raise Pkcs11Exception(f"C_GetMechanismList: {hex(rv)}")
 
     rv = functionListI.C_GetMechanismInfo(slotID, mechanisms[13] , &mechInfo) #CK_SLOT_ID slotID, CK_MECHANISM_TYPE type, CK_MECHANISM_INFO_PTR pInfo
     if rv != 0:
-        raise Pkcs11Exception("C_GetMechanismInfo: {:s}".format(rvToString(rv)))
+        raise Pkcs11Exception(f"C_GetMechanismInfo: {hex(rv)}")
     i = 0
     expMechInfo = []
 
     while i < <int>mechanismCount:
 
         rv = functionListI.C_GetMechanismInfo(slotID, mechanisms[i] , &mechInfo)
-
-
+        if rv != 0:
+            raise Pkcs11Exception(f"C_GetMechanismInfo(mechanism {i}): {hex(rv)}")
+        
         # print(f" {i}: mechanisms: {mech2string[mechanisms[i]]}, keySize= ({mechInfo.ulMinKeySize},{mechInfo.ulMaxKeySize}), ", end=" ")
     
         mFlag = bin(mechInfo.flags)
@@ -846,7 +846,7 @@ def mechanism_list(pin,slotsII,functionListUIP):
                 listFlag.append(mechFlag[hex(int(bFlag, 2))])
                 # print(mechFlag[hex(int(bFlag, 2))] , end=" ")
 
-        expMechInfo.append(str(i) + " mechanisms: " + str(mech2string[mechanisms[i]]) + " ,  keySize= (" + str(mechInfo.ulMinKeySize) + "," + str(mechInfo.ulMaxKeySize)+ "),  " 
+        expMechInfo.append(str(i) + " mechanisms: " + str(mech2string[mechanisms[i]]) + " ,  keySize= {" + str(mechInfo.ulMinKeySize) + "," + str(mechInfo.ulMaxKeySize)+ "},  " 
         + " ".join(listFlag) )
         # print(" ")
         i+=1
