@@ -454,7 +454,7 @@ def format_token(slotsII,functionListExUIP):
     cdef CK_SLOT_ID slot = slotsII[0]
     
 
-    #print("---" + int(slot))
+    #print("---" + int(slot))/home/reversin/pPro/cYthon
 
     soPin = bytearray("87654321",'utf-8')
     pin = bytearray("12345678",'utf-8')
@@ -853,6 +853,7 @@ def mechanism_list(slotsII,functionListUIP):
     
     return expMechInfo
 
-
+def gen_key_pair():
+    return 0
 
 
