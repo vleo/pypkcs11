@@ -870,7 +870,7 @@ keyTypes = {
     "CKK_GOST28147"  : 0x00000032
     }
 
-def gen_key_pair(slotsII,pin,functionListUIP):
+def gen_key_pair(slotsII,pin,functionListUIP, pkTemplate):
 
     cdef CK_SESSION_HANDLE session
     cdef CK_RV rv
@@ -889,7 +889,8 @@ def gen_key_pair(slotsII,pin,functionListUIP):
 
     cdef CK_KEY_TYPE keyTypeGostR3410_2012_256 = keyTypes("CKK_GOSTR3410")
 
-    cdef CK_BYTE keyPairIdGost2012_256[] = {"GOST R 34.10-2012 (256 bits) sample key pair ID (Aktiv Co.)"}
+    cdef keyPairIdGost2012_256 = bytearray("xyzzy", 'utf-8')
+    #keyPairIdGost2012_256 = b"GOST R 34.10-2012 (256 bits) sample key pair ID (Aktiv Co.)"
 
 
     cdef CK_BYTE parametersGostR3410_2012_256 = {0x06, 0x07, 0x2a, 0x85, 0x03, 0x02, 0x02, 0x23, 0x01}
@@ -900,9 +901,14 @@ def gen_key_pair(slotsII,pin,functionListUIP):
     cdef CK_OBJECT_CLASS publicKeyObject = 0x00000002
 
     cdef CK_ATTRIBUTE publicKeyTemplate
+    cdef CK_ATTRIBUTE e1 
+    e1.type = 0x00000000
+    e1.pValue = publicKeyObject
+    e1.ulValueLen = sizeof(publicKeyObject)
+
     publicKeyTemplate = CK_ATTRIBUTE(
         ( 0x00000000, publicKeyObject, sizeof(publicKeyObject)),
-        ( 0x00000102, keyPairIdGost2012_256, sizeof(keyPairIdGost2012_256) - 1 ),
+        ( 0x00000102, <char*>keyPairIdGost2012_256, sizeof(keyPairIdGost2012_256) - 1 ),
 		( 0x00000100, &keyTypeGostR3410_2012_256, sizeof(keyTypeGostR3410_2012_256) ),
 		( 0x00000001, &attributeTrue, sizeof(attributeTrue)),
 		( 0x00000002, &attributeFalse, sizeof(attributeFalse)),
