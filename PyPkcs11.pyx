@@ -253,7 +253,7 @@ cdef extern:
         CK_ULONG    ulMaxKeySize
         CK_FLAGS    flags
 
-cdef CK_FUNCTION_LIST_EXTENDED_PTR functionListEx
+# cdef CK_FUNCTION_LIST_EXTENDED_PTR functionListEx
 # cdef CK_FUNCTION_LIST cfl
 # cdef CK_FUNCTION_LIST_PTR functionList
 # cdef CK_SLOT_ID_PTR slots
