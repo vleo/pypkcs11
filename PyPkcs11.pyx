@@ -33,6 +33,7 @@ cdef extern:
     ctypedef CK_ULONG CK_OBJECT_HANDLE
     ctypedef CK_ULONG CK_SESSION_HANDLE
     ctypedef CK_ULONG CK_STATE
+    ctypedef CK_ULONG CK_KEY_TYPE
 
     ctypedef unsigned char CK_BYTE
     ctypedef CK_BYTE CK_BBOOL
@@ -126,6 +127,10 @@ cdef extern:
     ctypedef CK_ULONG CK_USER_TYPE
     ctypedef CK_RV ( * CK_C_Login) ( CK_SESSION_HANDLE hSession , CK_USER_TYPE userType , CK_UTF8CHAR_PTR pPin, CK_ULONG ulPinLen )
 
+    ctypedef CK_ATTRIBUTE * CK_ATTRIBUTE_PTR
+    ctypedef CK_ULONG CK_ATTRIBUTE_TYPE
+
+    ctypedef CK_ULONG CK_OBJECT_CLASS;
 
     struct CK_INFO:
         CK_VERSION    cryptokiVersion   
@@ -252,6 +257,12 @@ cdef extern:
         CK_ULONG    ulMinKeySize
         CK_ULONG    ulMaxKeySize
         CK_FLAGS    flags
+
+    struct CK_ATTRIBUTE:
+        CK_ATTRIBUTE_TYPE type
+        CK_VOID_PTR pValue
+        CK_ULONG ulValueLen
+
 
 # cdef CK_FUNCTION_LIST_EXTENDED_PTR functionListEx
 # cdef CK_FUNCTION_LIST cfl
@@ -853,7 +864,60 @@ def mechanism_list(slotsII,functionListUIP):
     
     return expMechInfo
 
-def gen_key_pair():
+keyTypes = {
+    "CKK_GOSTR3410"  : 0x00000030,
+    "CKK_GOSTR3411"  : 0x00000031,
+    "CKK_GOST28147"  : 0x00000032
+    }
+
+def gen_key_pair(slotsII,pin,functionListUIP):
+
+    cdef CK_SESSION_HANDLE session
+    cdef CK_RV rv
+    cdef CK_FUNCTION_LIST_PTR functionListI = <CK_FUNCTION_LIST_PTR> <uintptr_t> functionListUIP
+    cdef CK_SLOT_ID slotID = slotsII[0]
+
+    soPin = bytearray(str(pin),'utf-8')
+
+    rv = functionListI.C_OpenSession(slotID, 0x00000004 | 0x00000002, cython.NULL, cython.NULL, &session)
+    if rv != 0:
+        raise Pkcs11Exception(f"C_OpenSession: {hex(rv)}")
+
+    rv = functionListI.C_Login(session, 1, soPin, len(soPin))
+    if rv != 0:
+        raise Pkcs11Exception(f"C_Login: {hex(rv)}")
+
+    cdef CK_KEY_TYPE keyTypeGostR3410_2012_256 = keyTypes("CKK_GOSTR3410")
+
+    cdef CK_BYTE keyPairIdGost2012_256[] = {"GOST R 34.10-2012 (256 bits) sample key pair ID (Aktiv Co.)"}
+
+
+    cdef CK_BYTE parametersGostR3410_2012_256 = {0x06, 0x07, 0x2a, 0x85, 0x03, 0x02, 0x02, 0x23, 0x01}
+    cdef CK_BYTE parametersGostR3411_2012_256 = {0x06, 0x08, 0x2a, 0x85, 0x03, 0x07, 0x01, 0x01, 0x02, 0x02}
+    cdef CK_BBOOL attributeTrue = 1
+    cdef CK_BBOOL attributeFalse = 0
+
+    cdef CK_OBJECT_CLASS publicKeyObject = 0x00000002
+
+    cdef CK_ATTRIBUTE publicKeyTemplate
+    publicKeyTemplate = CK_ATTRIBUTE(
+        ( 0x00000000, publicKeyObject, sizeof(publicKeyObject)),
+        ( 0x00000102, keyPairIdGost2012_256, sizeof(keyPairIdGost2012_256) - 1 ),
+		( 0x00000100, &keyTypeGostR3410_2012_256, sizeof(keyTypeGostR3410_2012_256) ),
+		( 0x00000001, &attributeTrue, sizeof(attributeTrue)),
+		( 0x00000002, &attributeFalse, sizeof(attributeFalse)),
+		( 0x00000250, parametersGostR3410_2012_256, sizeof(parametersGostR3410_2012_256) ),
+		( 0x00000251, parametersGostR3411_2012_256, sizeof(parametersGostR3411_2012_256) )
+    )
+
+    # cdef CK_C_INITIALIZE_ARGS initArgs
+    # initArgs = CK_C_INITIALIZE_ARGS(
+    #     cython.NULL,
+    #     cython.NULL,
+    #     cython.NULL,
+    #     cython.NULL,
+    #     0x00000002,
+    #     cython.NULL)
     return 0
 
 
