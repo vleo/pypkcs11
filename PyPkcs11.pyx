@@ -905,12 +905,13 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
 
 
     cdef CK_OBJECT_CLASS publicKeyObject = 0x00000002
-    cdef CK_VOID_PTR pkoAdr = &publicKeyObject
-    voidPTR[0] =  <uintptr_t>pkoAdr
+    cdef CK_VOID_PTR toVoid = &publicKeyObject
+    voidPTR[0] =  <uintptr_t>toVoid
     vLen[0] = sizeof(publicKeyObject)
 
-    cdef keyPairIdGost2012_256 = bytearray("GOST R 34.10-2012 (256 bits) sample key pair ID (Aktiv Co.)")
-    voidPTR[1] = keyPairIdGost2012_256
+    keyPairIdGost2012_256 = bytearray("GOST R 34.10-2012 (256 bits) sample key pair ID (Aktiv Co.)" , 'utf-8')
+    cdef CK_VOID_PTR toVoid1 = &keyPairIdGost2012_256
+    voidPTR[1] = <uintptr_t>toVoid1
     vLen[1] = sizeof(keyPairIdGost2012_256) - 1
 
     cdef CK_KEY_TYPE keyTypeGostR3410_2012_256 = keyTypes["CKK_GOSTR3410"]
@@ -926,7 +927,7 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
     vLen[4] = sizeof(attributeFalse)
 
     #keyPairIdGost2012_256 = b"GOST R 34.10-2012 (256 bits) sample key pair ID (Aktiv Co.)"
-    exit(0)
+
     pgR3410_2012_256 = [0x06, 0x07, 0x2a, 0x85, 0x03, 0x02, 0x02, 0x23, 0x01]
     cdef CK_BYTE parametersGostR3410_2012_256[9]
     for i in range(9):
@@ -943,12 +944,12 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
     vLen[6] = sizeof(parametersGostR3411_2012_256)
 
 
-    cdef CK_ATTRIBUTE publicKeyTemplate[7][3]
+    cdef CK_ATTRIBUTE publicKeyTemplate[7]
 
     for i in range(6):
         print(i)
-        publicKeyTemplate[i].type = 0x00000000
-        publicKeyTemplate[i].pValue = &voidPTR[i]
+        publicKeyTemplate[i].type = attTypes[i]
+        publicKeyTemplate[i].pValue = <CK_VOID_PTR><uintptr_t>voidPTR[i]
         publicKeyTemplate[i].ulValueLen  = vLen[i]
 
 
