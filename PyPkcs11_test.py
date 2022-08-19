@@ -5,6 +5,12 @@ functionListUIP, functionListExUIP = PyPkcs11.init_pkcs11("./librtpkcs11ecp.so")
 # print(functionListUIP)
 
 slotsList = PyPkcs11.get_slots_list(functionListUIP)
+if slotsList == 0:
+    print("Токена нет")
+
+else:
+    pin = 12345678
+    rv4 = PyPkcs11.gen_key_pair(slotsList, pin, functionListUIP)
 
 
 
@@ -14,7 +20,5 @@ slotsList = PyPkcs11.get_slots_list(functionListUIP)
 # for m in rvs3:
 #     print(m)
 
-pin = 12345678
-rv4 = PyPkcs11.gen_key_pair(slotsList,pin,functionListUIP)
 
 

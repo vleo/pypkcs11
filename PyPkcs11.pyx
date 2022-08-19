@@ -1,7 +1,8 @@
 from __future__ import print_function
 import cython
 cimport cython
-from Cython import boundscheck
+from libc.stdlib cimport malloc, free
+
 
 from libc.stdlib cimport malloc
 from libc.stdio cimport printf
@@ -134,6 +135,8 @@ cdef extern:
 
     ctypedef CK_ULONG CK_OBJECT_CLASS;
 
+    ctypedef CK_RV(*CK_C_Logout) (CK_SESSION_HANDLE hSession)
+
     struct CK_INFO:
         CK_VERSION    cryptokiVersion   
         CK_UTF8CHAR   manufacturerID[32]
@@ -195,6 +198,47 @@ cdef extern:
         CK_C_GetOperationState C_GetOperationState
         CK_C_SetOperationState C_SetOperationState
         CK_C_Login C_Login
+        CK_C_Logout C_Logout
+        CK_C_CreateObject C_CreateObject;
+        CK_C_CopyObject C_CopyObject;
+        CK_C_DestroyObject C_DestroyObject;
+        CK_C_GetObjectSize C_GetObjectSize;
+        CK_C_GetAttributeValue C_GetAttributeValue;
+        CK_C_SetAttributeValue C_SetAttributeValue;
+        CK_C_FindObjectsInit C_FindObjectsInit;
+        CK_C_FindObjects C_FindObjects;
+        CK_C_FindObjectsFinal C_FindObjectsFinal;
+        CK_C_EncryptInit C_EncryptInit;
+        CK_C_Encrypt C_Encrypt;
+        CK_C_EncryptUpdate C_EncryptUpdate;
+        CK_C_EncryptFinal C_EncryptFinal;
+        CK_C_DecryptInit C_DecryptInit;
+        CK_C_Decrypt C_Decrypt;
+        CK_C_DecryptUpdate C_DecryptUpdate;
+        CK_C_DecryptFinal C_DecryptFinal;
+        CK_C_DigestInit C_DigestInit;
+        CK_C_Digest C_Digest;
+        CK_C_DigestUpdate C_DigestUpdate;
+        CK_C_DigestKey C_DigestKey;
+        CK_C_DigestFinal C_DigestFinal;
+        CK_C_SignInit C_SignInit;
+        CK_C_Sign C_Sign;
+        CK_C_SignUpdate C_SignUpdate;
+        CK_C_SignFinal C_SignFinal;
+        CK_C_SignRecoverInit C_SignRecoverInit;
+        CK_C_SignRecover C_SignRecover;
+        CK_C_VerifyInit C_VerifyInit;
+        CK_C_Verify C_Verify;
+        CK_C_VerifyUpdate C_VerifyUpdate;
+        CK_C_VerifyFinal C_VerifyFinal;
+        CK_C_VerifyRecoverInit C_VerifyRecoverInit;
+        CK_C_VerifyRecover C_VerifyRecover;
+        CK_C_DigestEncryptUpdate C_DigestEncryptUpdate;
+        CK_C_DecryptDigestUpdate C_DecryptDigestUpdate;
+        CK_C_SignEncryptUpdate C_SignEncryptUpdate;
+        CK_C_DecryptVerifyUpdate C_DecryptVerifyUpdate;
+        CK_C_GenerateKey C_GenerateKey;
+        CK_C_GenerateKeyPair C_GenerateKeyPair;
 
     struct CK_FUNCTION_LIST_EXTENDED:
         CK_VERSION version
@@ -265,6 +309,10 @@ cdef extern:
         CK_VOID_PTR pValue
         CK_ULONG ulValueLen
 
+    struct CK_MECHANISM:
+      CK_MECHANISM_TYPE mechanism
+      CK_VOID_PTR pParameter
+      CK_ULONG ulParameterLen
 
 # cdef CK_FUNCTION_LIST_EXTENDED_PTR functionListEx
 # cdef CK_FUNCTION_LIST cfl
@@ -416,16 +464,16 @@ def init_pkcs11(path):
 
 def free_pkcs11(functioniListUIP):
 
-  cdef CK_FUNCTION_LIST_PTR functionListI = <CK_FUNCTION_LIST_PTR> functioniListUIP
-  
-  cdef CK_RV rv1
-  errorCode = 1
 
-  rv = functionListI.C_Finalize(cython.NULL)
-  if rv != 0:
-    raise Pkcs11Exception(f"C_Finalize: {hex(rv)}")
+    cdef CK_FUNCTION_LIST_PTR functionListI = <CK_FUNCTION_LIST_PTR> functioniListUIP
+    cdef CK_RV rv1
 
-  return errorCode
+    rv = functionListI.C_Finalize(cython.NULL)
+
+    if rv != 0:
+        raise Pkcs11Exception(f"C_Finalize: {hex(rv)}")
+
+    print("Finish")
 
 def get_slots_list(functionListUIP):
 
@@ -448,6 +496,10 @@ def get_slots_list(functionListUIP):
     raise Pkcs11Exception(f"C_GetSlotList: {hex(rv1)}")
 
   print(" Slots available: ", <CK_ULONG>slotCount)
+
+  if <CK_ULONG>slotCount == 0:
+      return 0
+
 
 
 
@@ -897,13 +949,13 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
 
     soPin = bytearray(str(pin),'utf-8')
 
-    # rv = functionListI.C_OpenSession(slotID, 0x00000004 | 0x00000002, cython.NULL, cython.NULL, &session)
-    # if rv != 0:
-    #     raise Pkcs11Exception(f"C_OpenSession: {hex(rv)}")
-    #
-    # rv = functionListI.C_Login(session, 1, soPin, len(soPin))
-    # if rv != 0:
-    #     raise Pkcs11Exception(f"C_Login: {hex(rv)}")
+    rv = functionListI.C_OpenSession(slotID, 0x00000004 | 0x00000002, cython.NULL, cython.NULL, &session)
+    if rv != 0:
+        raise Pkcs11Exception(f"C_OpenSession: {hex(rv)}")
+
+    rv = functionListI.C_Login(session, 1, soPin, len(soPin))
+    if rv != 0:
+        raise Pkcs11Exception(f"C_Login: {hex(rv)}")
 
 
     cdef CK_OBJECT_CLASS publicKeyObject = 0x00000002
@@ -913,9 +965,12 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
 
     kPIGost2012_256 =  b"GOST R 34.10-2012 (256 bits) sample key pair ID (Aktiv Co.)"
     # print(len(keyPairIdGost2012_256))
-    cdef CK_BYTE keyPairIdGost2012_256[59]
+    #cdef CK_ATTRIBUTE * publicKeyTemplate = <CK_ATTRIBUTE *> malloc(tSize + 1)
+
+    cdef CK_BYTE * keyPairIdGost2012_256 = <CK_BYTE *> malloc(len(kPIGost2012_256) + 1)
     for i in range(len(kPIGost2012_256)):
         keyPairIdGost2012_256[i] = kPIGost2012_256[i]
+
     cdef CK_VOID_PTR toVoid1 = keyPairIdGost2012_256
     voidPTR[1] = <uintptr_t>toVoid1
     vLen[1] = sizeof(keyPairIdGost2012_256) - 1
@@ -935,65 +990,74 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
     #keyPairIdGost2012_256 = b"GOST R 34.10-2012 (256 bits) sample key pair ID (Aktiv Co.)"
 
     pgR3410_2012_256 = [0x06, 0x07, 0x2a, 0x85, 0x03, 0x02, 0x02, 0x23, 0x01]
-    cdef CK_BYTE parametersGostR3410_2012_256[9]
-    for i in range(9):
+    cdef CK_BYTE * parametersGostR3410_2012_256 = <CK_BYTE *> malloc(len(pgR3410_2012_256) + 1)
+    for i in range(len(pgR3410_2012_256)):
         parametersGostR3410_2012_256[i] = pgR3410_2012_256[i]
 
     voidPTR[5] = <uintptr_t>parametersGostR3410_2012_256
     vLen[5] = sizeof(parametersGostR3410_2012_256)
 
     pgR3411_2012_256 = [0x06, 0x08, 0x2a, 0x85, 0x03, 0x07, 0x01, 0x01, 0x02, 0x02]
-    cdef CK_BYTE parametersGostR3411_2012_256[10]
-    for i in range(10):
+    cdef CK_BYTE * parametersGostR3411_2012_256 = <CK_BYTE *> malloc(len(pgR3411_2012_256))
+    for i in range(len(pgR3411_2012_256)):
         parametersGostR3411_2012_256[i] = pgR3411_2012_256[i]
     voidPTR[6] = <uintptr_t>parametersGostR3411_2012_256
     vLen[6] = sizeof(parametersGostR3411_2012_256)
 
-    boundscheck(False)
     tSize = len(attTypes)
 
     cdef CK_ATTRIBUTE * publicKeyTemplate = <CK_ATTRIBUTE*> malloc(tSize + 1)
 
     for i in range(len(attTypes)):
+        #print(i)
+        publicKeyTemplate[i].type = attTypes[i]
+        publicKeyTemplate[i].pValue = <CK_VOID_PTR><uintptr_t>voidPTR[i]
+        publicKeyTemplate[i].ulValueLen  = vLen[i]
+        # print(f"type {i} : {publicKeyTemplate[i].type}")
+        # print(f"pValue {i} :{<uintptr_t>publicKeyTemplate[i].pValue}" )
+        # print(f"ulValueLen {i} : {publicKeyTemplate[i].ulValueLen}")
+
+    cdef CK_ATTRIBUTE * pubKTemplate = publicKeyTemplate
+    free(publicKeyTemplate)
+
+    cdef CK_OBJECT_CLASS privateKeyObject = 0x00000003
+    cdef CK_VOID_PTR toVoidPriv = &privateKeyObject
+    voidPTR[0] = <uintptr_t> toVoidPriv
+    vLen[0] = sizeof(privateKeyObject)
+
+    voidPTR[4] = attributeTrue
+    vLen[4] = sizeof(attributeTrue)
+
+
+    cdef CK_ATTRIBUTE * privateKeyTemplate = <CK_ATTRIBUTE *> malloc(tSize + 1)
+
+    for i in range(len(attTypes)):
         print(i)
         publicKeyTemplate[i].type = attTypes[i]
-        print('a')
         publicKeyTemplate[i].pValue = <CK_VOID_PTR><uintptr_t>voidPTR[i]
-        print('b')
         publicKeyTemplate[i].ulValueLen  = vLen[i]
         print(f"type {i} : {publicKeyTemplate[i].type}")
         print(f"pValue {i} :{<uintptr_t>publicKeyTemplate[i].pValue}" )
         print(f"ulValueLen {i} : {publicKeyTemplate[i].ulValueLen}")
 
+    cdef CK_ATTRIBUTE * priKTemplate = privateKeyTemplate
+    free(privateKeyTemplate)
 
+    cdef CK_OBJECT_HANDLE privateKey
+    cdef CK_OBJECT_HANDLE publicKey
 
+    cdef CK_MECHANISM gostR3410_2012_256KeyPairGenMech
+    gostR3410_2012_256KeyPairGenMech= CK_MECHANISM(0x00001200, cython.NULL, 0)
 
-    # cdef CK_OBJECT_CLASS publicKeyObject = 0x00000002
-    #
-    # cdef CK_ATTRIBUTE publicKeyTemplate
-    # cdef CK_ATTRIBUTE e1
-    # e1.type = 0x00000000
-    # e1.pValue = publicKeyObject
-    # e1.ulValueLen = sizeof(publicKeyObject)
-    #
-    # publicKeyTemplate = CK_ATTRIBUTE(
-    #     ( 0x00000000, publicKeyObject, sizeof(publicKeyObject)),
-    #     ( 0x00000102, <char*>keyPairIdGost2012_256, sizeof(keyPairIdGost2012_256) - 1 ),
-	# 	( 0x00000100, &keyTypeGostR3410_2012_256, sizeof(keyTypeGostR3410_2012_256) ),
-	# 	( 0x00000001, &attributeTrue, sizeof(attributeTrue)),
-	# 	( 0x00000002, &attributeFalse, sizeof(attributeFalse)),
-	# 	( 0x00000250, parametersGostR3410_2012_256, sizeof(parametersGostR3410_2012_256) ),
-	# 	( 0x00000251, parametersGostR3411_2012_256, sizeof(parametersGostR3411_2012_256) )
-    # )
+    rv = functionListI.C_GenerateKeyPair(session, &gostR3410_2012_256KeyPairGenMech,
+                                         publicKeyTemplate, len(pubKTemplate),
+                                         privateKeyTemplate, len(priKTemplate),
+                                         &publicKey, &privateKey)
 
-    # cdef CK_C_INITIALIZE_ARGS initArgs
-    # initArgs = CK_C_INITIALIZE_ARGS(
-    #     cython.NULL,
-    #     cython.NULL,
-    #     cython.NULL,
-    #     cython.NULL,
-    #     0x00000002,
-    #     cython.NULL)
+    if rv != 0:
+        raise Pkcs11Exception(f"C_GenerateKeyPair: {hex(rv)}")
+
+    printf("Gost key pair generated sucessfully\n")
     return 0
 
 
