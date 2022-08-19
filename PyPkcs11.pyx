@@ -1,5 +1,7 @@
 from __future__ import print_function
 import cython
+cimport cython
+from Cython import boundscheck
 
 from libc.stdlib cimport malloc
 from libc.stdio cimport printf
@@ -873,7 +875,7 @@ keyTypes = {
 attTypes = {
     0 : 0x00000000,
     1 : 0x00000102,
-    2: 0x00000100,
+    2 : 0x00000100,
     3 : 0x00000001,
     4 : 0x00000002,
     5 : 0x00000250,
@@ -895,13 +897,13 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
 
     soPin = bytearray(str(pin),'utf-8')
 
-    rv = functionListI.C_OpenSession(slotID, 0x00000004 | 0x00000002, cython.NULL, cython.NULL, &session)
-    if rv != 0:
-        raise Pkcs11Exception(f"C_OpenSession: {hex(rv)}")
-
-    rv = functionListI.C_Login(session, 1, soPin, len(soPin))
-    if rv != 0:
-        raise Pkcs11Exception(f"C_Login: {hex(rv)}")
+    # rv = functionListI.C_OpenSession(slotID, 0x00000004 | 0x00000002, cython.NULL, cython.NULL, &session)
+    # if rv != 0:
+    #     raise Pkcs11Exception(f"C_OpenSession: {hex(rv)}")
+    #
+    # rv = functionListI.C_Login(session, 1, soPin, len(soPin))
+    # if rv != 0:
+    #     raise Pkcs11Exception(f"C_Login: {hex(rv)}")
 
 
     cdef CK_OBJECT_CLASS publicKeyObject = 0x00000002
@@ -909,8 +911,12 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
     voidPTR[0] =  <uintptr_t>toVoid
     vLen[0] = sizeof(publicKeyObject)
 
-    keyPairIdGost2012_256 = bytearray("GOST R 34.10-2012 (256 bits) sample key pair ID (Aktiv Co.)" , 'utf-8')
-    cdef CK_VOID_PTR toVoid1 = &keyPairIdGost2012_256
+    kPIGost2012_256 =  b"GOST R 34.10-2012 (256 bits) sample key pair ID (Aktiv Co.)"
+    # print(len(keyPairIdGost2012_256))
+    cdef CK_BYTE keyPairIdGost2012_256[59]
+    for i in range(len(kPIGost2012_256)):
+        keyPairIdGost2012_256[i] = kPIGost2012_256[i]
+    cdef CK_VOID_PTR toVoid1 = keyPairIdGost2012_256
     voidPTR[1] = <uintptr_t>toVoid1
     vLen[1] = sizeof(keyPairIdGost2012_256) - 1
 
@@ -933,7 +939,7 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
     for i in range(9):
         parametersGostR3410_2012_256[i] = pgR3410_2012_256[i]
 
-    voidPTR[5] = parametersGostR3410_2012_256
+    voidPTR[5] = <uintptr_t>parametersGostR3410_2012_256
     vLen[5] = sizeof(parametersGostR3410_2012_256)
 
     pgR3411_2012_256 = [0x06, 0x08, 0x2a, 0x85, 0x03, 0x07, 0x01, 0x01, 0x02, 0x02]
@@ -943,14 +949,19 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
     voidPTR[6] = parametersGostR3411_2012_256
     vLen[6] = sizeof(parametersGostR3411_2012_256)
 
+    boundscheck(False)
+    tSize = len(attTypes)
 
-    cdef CK_ATTRIBUTE publicKeyTemplate[7]
+    cdef CK_ATTRIBUTE * publicKeyTemplate = <CK_ATTRIBUTE*> malloc(tSize + 1)
 
-    for i in range(6):
+    for i in range(len(attTypes)):
         print(i)
         publicKeyTemplate[i].type = attTypes[i]
         publicKeyTemplate[i].pValue = <CK_VOID_PTR><uintptr_t>voidPTR[i]
         publicKeyTemplate[i].ulValueLen  = vLen[i]
+        print(f"type {i} : {publicKeyTemplate[i].type}")
+        print(f"pValue {i} :{<uintptr_t>publicKeyTemplate[i].pValue}" )
+        print(f"ulValueLen {i} : {publicKeyTemplate[i].ulValueLen}")
 
 
 
