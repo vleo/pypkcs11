@@ -946,7 +946,7 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
     cdef CK_BYTE parametersGostR3411_2012_256[10]
     for i in range(10):
         parametersGostR3411_2012_256[i] = pgR3411_2012_256[i]
-    voidPTR[6] = parametersGostR3411_2012_256
+    voidPTR[6] = <uintptr_t>parametersGostR3411_2012_256
     vLen[6] = sizeof(parametersGostR3411_2012_256)
 
     boundscheck(False)
@@ -957,7 +957,9 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
     for i in range(len(attTypes)):
         print(i)
         publicKeyTemplate[i].type = attTypes[i]
+        print('a')
         publicKeyTemplate[i].pValue = <CK_VOID_PTR><uintptr_t>voidPTR[i]
+        print('b')
         publicKeyTemplate[i].ulValueLen  = vLen[i]
         print(f"type {i} : {publicKeyTemplate[i].type}")
         print(f"pValue {i} :{<uintptr_t>publicKeyTemplate[i].pValue}" )
