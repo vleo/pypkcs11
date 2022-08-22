@@ -22,7 +22,7 @@ cdef extern from "dlfcn.h":
   cdef int RTLD_NOW
   void *dlsym(void *handle, const char *symbol)
   char *dlerror()
-  
+
 
 cdef extern:
     ctypedef void * CK_VOID_PTR
@@ -137,6 +137,87 @@ cdef extern:
 
     ctypedef CK_RV(*CK_C_Logout) (CK_SESSION_HANDLE hSession)
 
+    ctypedef CK_OBJECT_HANDLE * CK_OBJECT_HANDLE_PTR
+    ctypedef CK_RV(*CK_C_CreateObject) ( CK_SESSION_HANDLE hSession, CK_ATTRIBUTE_PTR pTemplate, CK_ULONG ulCount, CK_OBJECT_HANDLE_PTR phObject)
+
+    ctypedef CK_RV (*CK_C_CopyObject) (CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE hObject,  CK_ATTRIBUTE_PTR pTemplate,  CK_ULONG   ulCount,  CK_OBJECT_HANDLE_PTR phNewObject)
+
+    ctypedef CK_RV(*CK_C_DestroyObject) ( CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE hObject)
+
+    ctypedef CK_RV(*CK_C_GetObjectSize)( CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE  hObject,  CK_ULONG_PTR pulSize)
+
+    ctypedef CK_RV(*CK_C_GetAttributeValue) (CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE hObject, CK_ATTRIBUTE_PTR pTemplate, CK_ULONGulCount)
+
+    ctypedef CK_RV(*CK_C_SetAttributeValue) (CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE hObject, CK_ATTRIBUTE_PTR pTemplate, CK_ULONG ulCount)
+
+    ctypedef CK_RV(*CK_C_FindObjectsInit) ( CK_SESSION_HANDLE hSession, CK_ATTRIBUTE_PTR pTemplate, CK_ULONG ulCount )
+
+    ctypedef CK_RV(*CK_C_FindObjects) ( CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE_PTR phObject, CK_ULONG ulMaxObjectCount, CK_ULONG_PTR pulObjectCount)
+
+    ctypedef CK_RV(*CK_C_FindObjectsFinal)( CK_SESSION_HANDLE hSession )
+
+    ctypedef CK_MECHANISM * CK_MECHANISM_PTR;
+    ctypedef CK_RV ( *CK_C_EncryptInit)(CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism, CK_OBJECT_HANDLE hKey)
+
+    ctypedef CK_RV ( *CK_C_Encrypt)(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pData, CK_ULONG ulDataLen,
+                                    CK_BYTE_PTR pEncryptedData, CK_ULONG_PTR pulEncryptedDataLen)
+
+    ctypedef CK_RV ( *CK_C_EncryptUpdate)(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pPart, CK_ULONG ulPartLen,
+                                          CK_BYTE_PTR pEncryptedPart, CK_ULONG_PTR pulEncryptedPartLen)
+
+    ctypedef CK_RV ( *CK_C_EncryptFinal)(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pLastEncryptedPart,
+                                         CK_ULONG_PTR pulLastEncryptedPartLen)
+
+
+
+    ctypedef CK_RV(*CK_C_DecryptInit) (  CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism, CK_OBJECT_HANDLE hKey )
+
+    ctypedef CK_RV(*CK_C_Decrypt) ( CK_SESSION_HANDLE hSession, CK_BYTE_PTR pEncryptedData, CK_ULONG ulEncryptedDataLen, CK_BYTE_PTR pData, CK_ULONG_PTR pulDataLen)
+
+    ctypedef CK_RV(*CK_C_DecryptUpdate) ( CK_SESSION_HANDLE hSession, CK_BYTE_PTR pEncryptedPart, CK_ULONG ulEncryptedPartLen, CK_BYTE_PTR pPart, CK_ULONG_PTR pulPartLen )
+
+    ctypedef CK_RV(*CK_C_DecryptFinal) ( CK_SESSION_HANDLE hSession, CK_BYTE_PTR pLastPart, CK_ULONG_PTR pulLastPartLen)
+
+    ctypedef CK_RV(*CK_C_DigestInit) ( CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism)
+
+    ctypedef CK_RV(*CK_C_Digest) ( CK_SESSION_HANDLE hSession, CK_BYTE_PTR pData, CK_ULONG ulDataLen, CK_BYTE_PTR pDigest, CK_ULONG_PTR pulDigestLen )
+
+    ctypedef CK_RV(*CK_C_DigestUpdate) ( CK_SESSION_HANDLE hSession, CK_BYTE_PTR pPart, CK_ULONG ulPartLen )
+
+    ctypedef CK_RV(*CK_C_DigestKey) ( CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE hKey)
+
+    ctypedef CK_RV (*CK_C_DigestFinal)(CK_SESSION_HANDLE hSession, CK_BYTE_PTRpDigest, CK_ULONG_PTRpulDigestLen)
+    ctypedef CK_RV (*CK_C_SignInit)(CK_SESSION_HANDLE hSession, CK_MECHANISM_PTRpMechanism, CK_OBJECT_HANDLEhKey)
+    ctypedef CK_RV (*CK_C_Sign)(CK_SESSION_HANDLE hSession, CK_BYTE_PTRpData, CK_ULONGulDataLen, CK_BYTE_PTRpSignature,
+                               CK_ULONG_PTRpulSignatureLen)
+    ctypedef CK_RV (*CK_C_SignUpdate)(CK_SESSION_HANDLE hSession, CK_BYTE_PTRpPart, CK_ULONGulPartLen)
+    ctypedef CK_RV (*CK_C_SignFinal)(CK_SESSION_HANDLE hSession, CK_BYTE_PTRpSignature, CK_ULONG_PTRpulSignatureLen)
+    ctypedef CK_RV (*CK_C_SignRecoverInit)(CK_SESSION_HANDLE hSession, CK_MECHANISM_PTRpMechanism, CK_OBJECT_HANDLEhKey)
+    ctypedef CK_RV (*CK_C_SignRecover)(CK_SESSION_HANDLE hSession, CK_BYTE_PTRpData, CK_ULONGulDataLen,
+                                       CK_BYTE_PTRpSignature, CK_ULONG_PTRpulSignatureLen)
+    ctypedef CK_RV (*CK_C_VerifyInit)(CK_SESSION_HANDLE hSession, CK_MECHANISM_PTRpMechanism, CK_OBJECT_HANDLEhKey)
+    ctypedef CK_RV (*CK_C_Verify)(CK_SESSION_HANDLE hSession, CK_BYTE_PTRpData, CK_ULONGulDataLen, CK_BYTE_PTRpSignature,
+                                 CK_ULONGulSignatureLen)
+    ctypedef CK_RV (*CK_C_VerifyUpdate)(CK_SESSION_HANDLE hSession, CK_BYTE_PTRpPart, CK_ULONGulPartLen)
+    ctypedef CK_RV (*CK_C_VerifyFinal)(CK_SESSION_HANDLE hSession, CK_BYTE_PTRpSignature, CK_ULONGulSignatureLen)
+    ctypedef CK_RV (*CK_C_VerifyRecoverInit)(CK_SESSION_HANDLE hSession, CK_MECHANISM_PTRpMechanism,
+                                            CK_OBJECT_HANDLEhKey)
+    ctypedef CK_RV (*CK_C_VerifyRecover)(CK_SESSION_HANDLE hSession, CK_BYTE_PTRpSignature, CK_ULONGulSignatureLen,
+                                        CK_BYTE_PTRpData, CK_ULONG_PTRpulDataLen)
+    ctypedef CK_RV (*CK_C_DigestEncryptUpdate)(CK_SESSION_HANDLE hSession, CK_BYTE_PTRpPart, CK_ULONGulPartLen,
+                                              CK_BYTE_PTRpEncryptedPart, CK_ULONG_PTRpulEncryptedPartLen)
+    ctypedef CK_RV (*CK_C_DecryptDigestUpdate)(CK_SESSION_HANDLE hSession, CK_BYTE_PTRpEncryptedPart,
+                                              CK_ULONGulEncryptedPartLen, CK_BYTE_PTRpPart, CK_ULONG_PTRpulPartLen)
+    ctypedef CK_RV (*CK_C_SignEncryptUpdate)(CK_SESSION_HANDLE hSession, CK_BYTE_PTRpPart, CK_ULONGulPartLen,
+                                            CK_BYTE_PTRpEncryptedPart, CK_ULONG_PTRpulEncryptedPartLen)
+    ctypedef CK_RV (*CK_C_DecryptVerifyUpdate)(CK_SESSION_HANDLE hSession, CK_BYTE_PTRpEncryptedPart,
+                                              CK_ULONGulEncryptedPartLen, CK_BYTE_PTRpPart, CK_ULONG_PTRpulPartLen)
+    ctypedef CK_RV (*CK_C_GenerateKey)(CK_SESSION_HANDLE hSession, CK_MECHANISM_PTRpMechanism, CK_ATTRIBUTE_PTRpTemplate,
+                                      CK_ULONGulCount, CK_OBJECT_HANDLE_PTRphKey)
+    ctypedef CK_RV (*CK_C_GenerateKeyPair)(CK_SESSION_HANDLE hSession, CK_MECHANISM_PTRpMechanism,
+                                          CK_ATTRIBUTE_PTRpPublicKeyTemplate, CK_ULONGulPublicKeyAttributeCount,
+                                          CK_ATTRIBUTE_PTRpPrivateKeyTemplate, CK_ULONGulPrivateKeyAttributeCount,
+                                          CK_OBJECT_HANDLE_PTRphPublicKey, CK_OBJECT_HANDLE_PTRphPrivateKey)
     struct CK_INFO:
         CK_VERSION    cryptokiVersion   
         CK_UTF8CHAR   manufacturerID[32]
@@ -1033,12 +1114,12 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
 
     for i in range(len(attTypes)):
         print(i)
-        publicKeyTemplate[i].type = attTypes[i]
-        publicKeyTemplate[i].pValue = <CK_VOID_PTR><uintptr_t>voidPTR[i]
-        publicKeyTemplate[i].ulValueLen  = vLen[i]
-        print(f"type {i} : {publicKeyTemplate[i].type}")
-        print(f"pValue {i} :{<uintptr_t>publicKeyTemplate[i].pValue}" )
-        print(f"ulValueLen {i} : {publicKeyTemplate[i].ulValueLen}")
+        privateKeyTemplate[i].type = attTypes[i]
+        privateKeyTemplate[i].pValue = <CK_VOID_PTR><uintptr_t>voidPTR[i]
+        privateKeyTemplate[i].ulValueLen  = vLen[i]
+        print(f"type {i} : {privateKeyTemplate[i].type}")
+        print(f"pValue {i} :{<uintptr_t>privateKeyTemplate[i].pValue}" )
+        print(f"ulValueLen {i} : {privateKeyTemplate[i].ulValueLen}")
 
     cdef CK_ATTRIBUTE * priKTemplate = privateKeyTemplate
     free(privateKeyTemplate)
@@ -1049,9 +1130,10 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
     cdef CK_MECHANISM gostR3410_2012_256KeyPairGenMech
     gostR3410_2012_256KeyPairGenMech= CK_MECHANISM(0x00001200, cython.NULL, 0)
 
+
     rv = functionListI.C_GenerateKeyPair(session, &gostR3410_2012_256KeyPairGenMech,
-                                         publicKeyTemplate, len(pubKTemplate),
-                                         privateKeyTemplate, len(priKTemplate),
+                                         publicKeyTemplate, len(attTypes),
+                                         privateKeyTemplate, len(attTypes),
                                          &publicKey, &privateKey)
 
     if rv != 0:
