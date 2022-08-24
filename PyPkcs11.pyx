@@ -1085,18 +1085,19 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
     voidPTR[6] = <uintptr_t>parametersGostR3411_2012_256
     vLen[6] = sizeof(parametersGostR3411_2012_256)
 
-    tSize = len(attTypes)
+    tSize = sizeof(attTypes)
+    print(f"tSize: {tSize}")
 
-    cdef CK_ATTRIBUTE * publicKeyTemplate = <CK_ATTRIBUTE*> malloc(tSize + 1)
+    cdef CK_ATTRIBUTE * publicKeyTemplate = <CK_ATTRIBUTE*> malloc(tSize)
 
     for i in range(len(attTypes)):
         #print(i)
         publicKeyTemplate[i].type = attTypes[i]
         publicKeyTemplate[i].pValue = <CK_VOID_PTR><uintptr_t>voidPTR[i]
         publicKeyTemplate[i].ulValueLen  = vLen[i]
-        # print(f"type {i} : {publicKeyTemplate[i].type}")
-        # print(f"pValue {i} :{<uintptr_t>publicKeyTemplate[i].pValue}" )
-        # print(f"ulValueLen {i} : {publicKeyTemplate[i].ulValueLen}")
+        # print(f"type Pub {i} : {publicKeyTemplate[i].type}")
+        # print(f"pValue Pub {i} :{<uintptr_t>publicKeyTemplate[i].pValue}" )
+        # print(f"ulValueLen Pub {i} : {publicKeyTemplate[i].ulValueLen}")
 
     cdef CK_ATTRIBUTE * pubKTemplate = publicKeyTemplate
     free(publicKeyTemplate)
@@ -1110,19 +1111,29 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
     vLen[4] = sizeof(attributeTrue)
 
 
-    cdef CK_ATTRIBUTE * privateKeyTemplate = <CK_ATTRIBUTE *> malloc(tSize + 1)
+    cdef CK_ATTRIBUTE * privateKeyTemplate = <CK_ATTRIBUTE *> malloc(tSize)
 
     for i in range(len(attTypes)):
-        print(i)
+        # print(i)
         privateKeyTemplate[i].type = attTypes[i]
         privateKeyTemplate[i].pValue = <CK_VOID_PTR><uintptr_t>voidPTR[i]
         privateKeyTemplate[i].ulValueLen  = vLen[i]
-        print(f"type {i} : {privateKeyTemplate[i].type}")
-        print(f"pValue {i} :{<uintptr_t>privateKeyTemplate[i].pValue}" )
-        print(f"ulValueLen {i} : {privateKeyTemplate[i].ulValueLen}")
+        # print(f"type Priv {i} : {privateKeyTemplate[i].type}")
+        # print(f"pValue Priv {i} :{<uintptr_t>privateKeyTemplate[i].pValue}" )
+        # print(f"ulValueLen Priv {i} : {privateKeyTemplate[i].ulValueLen}")
 
     cdef CK_ATTRIBUTE * priKTemplate = privateKeyTemplate
     free(privateKeyTemplate)
+
+    for i in range(len(attTypes)):
+        print(i)
+        # privateKeyTemplate[i].type = attTypes[i]
+        # privateKeyTemplate[i].pValue = <CK_VOID_PTR><uintptr_t>voidPTR[i]
+        # privateKeyTemplate[i].ulValueLen  = vLen[i]
+        print(f"type {i} : {priKTemplate[i].type}")
+        print(f"pValue {i} :{<uintptr_t>priKTemplate[i].pValue}" )
+        print(f"ulValueLen {i} : {priKTemplate[i].ulValueLen}")
+
 
     cdef CK_OBJECT_HANDLE privateKey
     cdef CK_OBJECT_HANDLE publicKey
@@ -1132,8 +1143,8 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
 
 
     rv = functionListI.C_GenerateKeyPair(session, &gostR3410_2012_256KeyPairGenMech,
-                                         publicKeyTemplate, len(attTypes),
-                                         privateKeyTemplate, len(attTypes),
+                                         pubKTemplate, len(attTypes),
+                                         priKTemplate, len(attTypes),
                                          &publicKey, &privateKey)
 
     if rv != 0:
