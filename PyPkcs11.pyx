@@ -146,7 +146,7 @@ cdef extern:
 
     ctypedef CK_RV(*CK_C_GetObjectSize)( CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE  hObject,  CK_ULONG_PTR pulSize)
 
-    ctypedef CK_RV(*CK_C_GetAttributeValue) (CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE hObject, CK_ATTRIBUTE_PTR pTemplate, CK_ULONGulCount)
+    ctypedef CK_RV(*CK_C_GetAttributeValue) (CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE hObject, CK_ATTRIBUTE_PTR pTemplate, CK_ULONG GulCount)
 
     ctypedef CK_RV(*CK_C_SetAttributeValue) (CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE hObject, CK_ATTRIBUTE_PTR pTemplate, CK_ULONG ulCount)
 
@@ -186,38 +186,38 @@ cdef extern:
 
     ctypedef CK_RV(*CK_C_DigestKey) ( CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE hKey)
 
-    ctypedef CK_RV (*CK_C_DigestFinal)(CK_SESSION_HANDLE hSession, CK_BYTE_PTRpDigest, CK_ULONG_PTRpulDigestLen)
-    ctypedef CK_RV (*CK_C_SignInit)(CK_SESSION_HANDLE hSession, CK_MECHANISM_PTRpMechanism, CK_OBJECT_HANDLEhKey)
+    ctypedef CK_RV (*CK_C_DigestFinal)(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pDigest, CK_ULONG_PTR pulDigestLen)
+    ctypedef CK_RV (*CK_C_SignInit)(CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism, CK_OBJECT_HANDLE hKey)
     ctypedef CK_RV (*CK_C_Sign)(CK_SESSION_HANDLE hSession, CK_BYTE_PTRpData, CK_ULONGulDataLen, CK_BYTE_PTRpSignature,
                                CK_ULONG_PTRpulSignatureLen)
-    ctypedef CK_RV (*CK_C_SignUpdate)(CK_SESSION_HANDLE hSession, CK_BYTE_PTRpPart, CK_ULONGulPartLen)
+    ctypedef CK_RV (*CK_C_SignUpdate)(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pPart, CK_ULONGulPartLen)
     ctypedef CK_RV (*CK_C_SignFinal)(CK_SESSION_HANDLE hSession, CK_BYTE_PTRpSignature, CK_ULONG_PTRpulSignatureLen)
-    ctypedef CK_RV (*CK_C_SignRecoverInit)(CK_SESSION_HANDLE hSession, CK_MECHANISM_PTRpMechanism, CK_OBJECT_HANDLEhKey)
+    ctypedef CK_RV (*CK_C_SignRecoverInit)(CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism, CK_OBJECT_HANDLEhKey)
     ctypedef CK_RV (*CK_C_SignRecover)(CK_SESSION_HANDLE hSession, CK_BYTE_PTRpData, CK_ULONGulDataLen,
-                                       CK_BYTE_PTRpSignature, CK_ULONG_PTRpulSignatureLen)
-    ctypedef CK_RV (*CK_C_VerifyInit)(CK_SESSION_HANDLE hSession, CK_MECHANISM_PTRpMechanism, CK_OBJECT_HANDLEhKey)
-    ctypedef CK_RV (*CK_C_Verify)(CK_SESSION_HANDLE hSession, CK_BYTE_PTRpData, CK_ULONGulDataLen, CK_BYTE_PTRpSignature,
-                                 CK_ULONGulSignatureLen)
-    ctypedef CK_RV (*CK_C_VerifyUpdate)(CK_SESSION_HANDLE hSession, CK_BYTE_PTRpPart, CK_ULONGulPartLen)
-    ctypedef CK_RV (*CK_C_VerifyFinal)(CK_SESSION_HANDLE hSession, CK_BYTE_PTRpSignature, CK_ULONGulSignatureLen)
-    ctypedef CK_RV (*CK_C_VerifyRecoverInit)(CK_SESSION_HANDLE hSession, CK_MECHANISM_PTRpMechanism,
-                                            CK_OBJECT_HANDLEhKey)
-    ctypedef CK_RV (*CK_C_VerifyRecover)(CK_SESSION_HANDLE hSession, CK_BYTE_PTRpSignature, CK_ULONGulSignatureLen,
-                                        CK_BYTE_PTRpData, CK_ULONG_PTRpulDataLen)
-    ctypedef CK_RV (*CK_C_DigestEncryptUpdate)(CK_SESSION_HANDLE hSession, CK_BYTE_PTRpPart, CK_ULONGulPartLen,
-                                              CK_BYTE_PTRpEncryptedPart, CK_ULONG_PTRpulEncryptedPartLen)
-    ctypedef CK_RV (*CK_C_DecryptDigestUpdate)(CK_SESSION_HANDLE hSession, CK_BYTE_PTRpEncryptedPart,
-                                              CK_ULONGulEncryptedPartLen, CK_BYTE_PTRpPart, CK_ULONG_PTRpulPartLen)
-    ctypedef CK_RV (*CK_C_SignEncryptUpdate)(CK_SESSION_HANDLE hSession, CK_BYTE_PTRpPart, CK_ULONGulPartLen,
-                                            CK_BYTE_PTRpEncryptedPart, CK_ULONG_PTRpulEncryptedPartLen)
-    ctypedef CK_RV (*CK_C_DecryptVerifyUpdate)(CK_SESSION_HANDLE hSession, CK_BYTE_PTRpEncryptedPart,
-                                              CK_ULONGulEncryptedPartLen, CK_BYTE_PTRpPart, CK_ULONG_PTRpulPartLen)
-    ctypedef CK_RV (*CK_C_GenerateKey)(CK_SESSION_HANDLE hSession, CK_MECHANISM_PTRpMechanism, CK_ATTRIBUTE_PTRpTemplate,
-                                      CK_ULONGulCount, CK_OBJECT_HANDLE_PTRphKey)
-    ctypedef CK_RV (*CK_C_GenerateKeyPair)(CK_SESSION_HANDLE hSession, CK_MECHANISM_PTRpMechanism,
-                                          CK_ATTRIBUTE_PTRpPublicKeyTemplate, CK_ULONGulPublicKeyAttributeCount,
-                                          CK_ATTRIBUTE_PTRpPrivateKeyTemplate, CK_ULONGulPrivateKeyAttributeCount,
-                                          CK_OBJECT_HANDLE_PTRphPublicKey, CK_OBJECT_HANDLE_PTRphPrivateKey)
+                                       CK_BYTE_PTR pSignature, CK_ULONG_PTR pulSignatureLen)
+    ctypedef CK_RV (*CK_C_VerifyInit)(CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism, CK_OBJECT_HANDLEhKey)
+    ctypedef CK_RV (*CK_C_Verify)(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pData, CK_ULONG ulDataLen, CK_BYTE_PTR pSignature,
+                                 CK_ULONG ulSignatureLen)
+    ctypedef CK_RV (*CK_C_VerifyUpdate)(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pPart, CK_ULONG ulPartLen)
+    ctypedef CK_RV (*CK_C_VerifyFinal)(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pSignature, CK_ULONG ulSignatureLen)
+    ctypedef CK_RV (*CK_C_VerifyRecoverInit)(CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism,
+                                            CK_OBJECT_HANDLE hKey)
+    ctypedef CK_RV (*CK_C_VerifyRecover)(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pSignature, CK_ULONG ulSignatureLen,
+                                        CK_BYTE_PTR pData, CK_ULONG_PTR pulDataLen)
+    ctypedef CK_RV (*CK_C_DigestEncryptUpdate)(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pPart, CK_ULONG ulPartLen,
+                                              CK_BYTE_PTR pEncryptedPart, CK_ULONG_PTR pulEncryptedPartLen)
+    ctypedef CK_RV (*CK_C_DecryptDigestUpdate)(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pEncryptedPart,
+                                              CK_ULONG ulEncryptedPartLen, CK_BYTE_PTR pPart, CK_ULONG_PTR pulPartLen)
+    ctypedef CK_RV (*CK_C_SignEncryptUpdate)(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pPart, CK_ULONG ulPartLen,
+                                            CK_BYTE_PTR pEncryptedPart, CK_ULONG_PTR pulEncryptedPartLen)
+    ctypedef CK_RV (*CK_C_DecryptVerifyUpdate)(CK_SESSION_HANDLE hSession, CK_BYTE_PTR pEncryptedPart,
+                                              CK_ULONG GulEncryptedPartLen, CK_BYTE_PTR pPart, CK_ULONG_PTR pulPartLen)
+    ctypedef CK_RV (*CK_C_GenerateKey)(CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism, CK_ATTRIBUTE_PTR pTemplate,
+                                      CK_ULONG GulCount, CK_OBJECT_HANDLE_PTR phKey)
+    ctypedef CK_RV (*CK_C_GenerateKeyPair)(CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism,
+                                           CK_ATTRIBUTE_PTR pPublicKeyTemplate, CK_ULONG ulPublicKeyAttributeCount,
+                                           CK_ATTRIBUTE_PTR pPrivateKeyTemplate, CK_ULONG ulPrivateKeyAttributeCount,
+                                           CK_OBJECT_HANDLE_PTR phPublicKey, CK_OBJECT_HANDLE_PTR phPrivateKey)
     struct CK_INFO:
         CK_VERSION    cryptokiVersion   
         CK_UTF8CHAR   manufacturerID[32]
@@ -933,7 +933,7 @@ mechFlag = {
     '0x80000000' : 'CKF_EXTENSION'
     }
 
-def mechanism_list(slotsII,functionListUIP):
+def mechanism_list(slotsII,pin,functionListUIP):
 
     cdef CK_RV rv
     cdef CK_RV rv2
@@ -944,20 +944,20 @@ def mechanism_list(slotsII,functionListUIP):
 
     # print(slotID)
     
-    # cdef CK_SESSION_HANDLE session
+    cdef CK_SESSION_HANDLE session
     cdef CK_ULONG mechanismCount
     cdef CK_MECHANISM_TYPE_PTR mechanisms
     cdef CK_MECHANISM_INFO mechInfo
 
-    # soPin = bytearray(str(pin),'utf-8')
+    soPin = bytearray(str(pin),'utf-8')
 
-    # rv = functionListI.C_OpenSession(slotID, 0x00000004 | 0x00000002, cython.NULL, cython.NULL, &session)
-    # if rv != 0:
-    #     raise Pkcs11Exception(f"C_OpenSession: {hex(rv)}")
+    rv = functionListI.C_OpenSession(slotID, 0x00000004 | 0x00000002, cython.NULL, cython.NULL, &session)
+    if rv != 0:
+        raise Pkcs11Exception(f"C_OpenSession: {hex(rv)}")
         
-    # rv = functionListI.C_Login(session, 1, soPin, len(soPin))
-    # if rv != 0:
-    #     raise Pkcs11Exception(f"C_Login: {hex(rv)}")
+    rv = functionListI.C_Login(session, 1, soPin, len(soPin))
+    if rv != 0:
+        raise Pkcs11Exception(f"C_Login: {hex(rv)}")
 
     rv = functionListI.C_GetMechanismList(slotID, cython.NULL, &mechanismCount)
     if rv != 0:
