@@ -1077,30 +1077,34 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
 
     voidPTR[5] = <uintptr_t>parametersGostR3410_2012_256
     vLen[5] = sizeof(parametersGostR3410_2012_256)
+    free(parametersGostR3410_2012_256)
 
     pgR3411_2012_256 = [0x06, 0x08, 0x2a, 0x85, 0x03, 0x07, 0x01, 0x01, 0x02, 0x02]
-    cdef CK_BYTE * parametersGostR3411_2012_256 = <CK_BYTE *> malloc(len(pgR3411_2012_256))
+    cdef size_t ss = sizeof(pgR3411_2012_256)/ sizeof(int*)
+
+    cdef CK_BYTE * parametersGostR3411_2012_256 = <CK_BYTE *> malloc(ss * sizeof(CK_BYTE))
     for i in range(len(pgR3411_2012_256)):
         parametersGostR3411_2012_256[i] = pgR3411_2012_256[i]
     voidPTR[6] = <uintptr_t>parametersGostR3411_2012_256
     vLen[6] = sizeof(parametersGostR3411_2012_256)
+    free(parametersGostR3411_2012_256)
 
-    tSize = sizeof(attTypes)
+    tSize = len(attTypes)
     print(f"tSize: {tSize}")
 
-    cdef CK_ATTRIBUTE * publicKeyTemplate = <CK_ATTRIBUTE*> malloc(tSize)
+    cdef CK_ATTRIBUTE *publicKeyTemplate = <CK_ATTRIBUTE*> malloc(tSize * sizeof(CK_ATTRIBUTE))
 
     for i in range(len(attTypes)):
         #print(i)
         publicKeyTemplate[i].type = attTypes[i]
         publicKeyTemplate[i].pValue = <CK_VOID_PTR><uintptr_t>voidPTR[i]
         publicKeyTemplate[i].ulValueLen  = vLen[i]
-        # print(f"type Pub {i} : {publicKeyTemplate[i].type}")
-        # print(f"pValue Pub {i} :{<uintptr_t>publicKeyTemplate[i].pValue}" )
-        # print(f"ulValueLen Pub {i} : {publicKeyTemplate[i].ulValueLen}")
+        print(f"type Pub {i} : {publicKeyTemplate[i].type}")
+        print(f"pValue Pub {i} :{<uintptr_t>publicKeyTemplate[i].pValue}" )
+        print(f"ulValueLen Pub {i} : {publicKeyTemplate[i].ulValueLen}")
 
-    cdef CK_ATTRIBUTE * pubKTemplate = publicKeyTemplate
-    free(publicKeyTemplate)
+
+    # free(publicKeyTemplate)
 
     cdef CK_OBJECT_CLASS privateKeyObject = 0x00000003
     cdef CK_VOID_PTR toVoidPriv = &privateKeyObject
@@ -1110,8 +1114,8 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
     voidPTR[4] = attributeTrue
     vLen[4] = sizeof(attributeTrue)
 
-
-    cdef CK_ATTRIBUTE * privateKeyTemplate = <CK_ATTRIBUTE *> malloc(tSize)
+    arrSize = tSize * sizeof(CK_ATTRIBUTE)
+    cdef CK_ATTRIBUTE *privateKeyTemplate = <CK_ATTRIBUTE *> malloc(tSize * sizeof(CK_ATTRIBUTE))
 
     for i in range(len(attTypes)):
         # print(i)
@@ -1123,34 +1127,36 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
         # print(f"ulValueLen Priv {i} : {privateKeyTemplate[i].ulValueLen}")
 
     cdef CK_ATTRIBUTE * priKTemplate = privateKeyTemplate
-    free(privateKeyTemplate)
+    # free(privateKeyTemplate)
 
-    for i in range(len(attTypes)):
-        print(i)
-        # privateKeyTemplate[i].type = attTypes[i]
-        # privateKeyTemplate[i].pValue = <CK_VOID_PTR><uintptr_t>voidPTR[i]
-        # privateKeyTemplate[i].ulValueLen  = vLen[i]
-        print(f"type {i} : {priKTemplate[i].type}")
-        print(f"pValue {i} :{<uintptr_t>priKTemplate[i].pValue}" )
-        print(f"ulValueLen {i} : {priKTemplate[i].ulValueLen}")
+    # for i in range(len(attTypes)):
+    #     print(i)
+    #     # privateKeyTemplate[i].type = attTypes[i]
+    #     # privateKeyTemplate[i].pValue = <CK_VOID_PTR><uintptr_t>voidPTR[i]
+    #     # privateKeyTemplate[i].ulValueLen  = vLen[i]
+    #     print(f"type {i} : {priKTemplate[i].type}")
+    #     print(f"pValue {i} :{<uintptr_t>priKTemplate[i].pValue}" )
+    #     print(f"ulValueLen {i} : {priKTemplate[i].ulValueLen}")
 
 
     cdef CK_OBJECT_HANDLE privateKey
     cdef CK_OBJECT_HANDLE publicKey
 
+
     cdef CK_MECHANISM gostR3410_2012_256KeyPairGenMech
-    gostR3410_2012_256KeyPairGenMech= CK_MECHANISM(0x00001200, cython.NULL, 0)
+    gostR3410_2012_256KeyPairGenMech = CK_MECHANISM(0x00001200, cython.NULL, 0)
 
 
+    # print(a)
     rv = functionListI.C_GenerateKeyPair(session, &gostR3410_2012_256KeyPairGenMech,
-                                         pubKTemplate, len(attTypes),
-                                         priKTemplate, len(attTypes),
+                                         publicKeyTemplate, arrSize,
+                                         privateKeyTemplate, arrSize,
                                          &publicKey, &privateKey)
 
     if rv != 0:
         raise Pkcs11Exception(f"C_GenerateKeyPair: {hex(rv)}")
 
-    printf("Gost key pair generated sucessfully\n")
+    print("Gost key pair generated sucessfully\n")
     return 0
 
 
