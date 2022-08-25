@@ -1055,6 +1055,7 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
     cdef CK_VOID_PTR toVoid = &publicKeyObject
     voidPTR[0] =  <uintptr_t>toVoid
     vLen[0] = sizeof(publicKeyObject)
+    dumpBuf(voidPTR[0], sizeof(publicKeyObject))
 
     kPIGost2012_256 =  b"GOST R 34.10-2012 (256 bits) sample key pair ID (Aktiv Co.)"
     cdef int kPIGost2012_256_len = len(kPIGost2012_256)
@@ -1072,7 +1073,7 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
     vLen[1] = kPIGost2012_256_sz
 
 
-    #dumpBuf(voidPTR[1], kPIGost2012_256_sz)
+
 
 
 
@@ -1081,13 +1082,16 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
     voidPTR[2] = keyTypeGostR3410_2012_256
     vLen[2] = sizeof(keyTypeGostR3410_2012_256)
 
+
     cdef CK_BBOOL attributeTrue = 1
     voidPTR[3] = attributeTrue
     vLen[3] = sizeof(attributeTrue)
 
+
     cdef CK_BBOOL attributeFalse = 0
     voidPTR[4] = attributeFalse
     vLen[4] = sizeof(attributeFalse)
+
 
     #keyPairIdGost2012_256 = b"GOST R 34.10-2012 (256 bits) sample key pair ID (Aktiv Co.)"
 
@@ -1102,7 +1106,7 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
     voidPTR[5] = <uintptr_t>parametersGostR3410_2012_256
     vLen[5] = pgR3410_2012_256_sz
 
-    dumpBuf(voidPTR[5], pgR3410_2012_256_sz)
+
 
     pgR3411_2012_256 = [0x06, 0x08, 0x2a, 0x85, 0x03, 0x07, 0x01, 0x01, 0x02, 0x02]
     pgR3411_2012_256_len = len(pgR3411_2012_256)
@@ -1116,10 +1120,18 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
 
     dumpBuf(voidPTR[6], pgR3411_2012_256_sz)
 
-    tSize = len(attTypes)
-    print(f"tSize: {tSize}")
+    # CK_ATTRIBUTE_TYPE
+    # type
+    # CK_VOID_PTR
+    # pValue
+    # CK_ULONG
+    # ulValueLen
 
-    cdef CK_ATTRIBUTE *publicKeyTemplate = <CK_ATTRIBUTE*> malloc(tSize * sizeof(CK_ATTRIBUTE))
+    tSize = len(attTypes)
+    print(f"tSize: {sizeof(CK_ATTRIBUTE_TYPE)},{sizeof(CK_VOID_PTR)},{sizeof(CK_ULONG)}")
+    pbSZ = tSize * sizeof(CK_ATTRIBUTE)
+
+    cdef CK_ATTRIBUTE *publicKeyTemplate = <CK_ATTRIBUTE*> malloc(pbSZ)
 
     for i in range(len(attTypes)):
         #print(i)
@@ -1130,7 +1142,7 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
         # print(f"pValue Pub {i} :{<uintptr_t>publicKeyTemplate[i].pValue}" )
         # print(f"ulValueLen Pub {i} : {publicKeyTemplate[i].ulValueLen}")
 
-
+    dumpBuf(<uintptr_t>publicKeyTemplate, pbSZ)
     # free(publicKeyTemplate)
 
     cdef CK_OBJECT_CLASS privateKeyObject = 0x00000003
@@ -1170,17 +1182,17 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
     # print(<uintptr_t>&publicKey)
     # print(<uintptr_t>&privateKey)
     #
-    for i in range(len(attTypes)):
-        print(f"pubType {i}: {publicKeyTemplate[i].type} | privType {i}: {privateKeyTemplate[i].type}")
-        print(f"pubValue {i}: {<uintptr_t>publicKeyTemplate[i].pValue} | privValue {i}: {<uintptr_t>privateKeyTemplate[i].pValue}")
-        print(f"pubValueLen {i}: {publicKeyTemplate[i].ulValueLen} | privValueLen {i}: {privateKeyTemplate[i].ulValueLen}")
-        print(" ")
+    # for i in range(len(attTypes)):
+    #     print(f"pubType {i}: {publicKeyTemplate[i].type} | privType {i}: {privateKeyTemplate[i].type}")
+    #     print(f"pubValue {i}: {<uintptr_t>publicKeyTemplate[i].pValue} | privValue {i}: {<uintptr_t>privateKeyTemplate[i].pValue}")
+    #     print(f"pubValueLen {i}: {publicKeyTemplate[i].ulValueLen} | privValueLen {i}: {privateKeyTemplate[i].ulValueLen}")
+    #     print(" ")
     # print(publicKeyTemplate)
     # print()
-    rv = functionListI.C_GenerateKeyPair(session, &gostR3410_2012_256KeyPairGenMech,
-                                         publicKeyTemplate, arrSize,
-                                         privateKeyTemplate, arrSize,
-                                         &publicKey, &privateKey)
+    # rv = functionListI.C_GenerateKeyPair(session, &gostR3410_2012_256KeyPairGenMech,
+    #                                      publicKeyTemplate, arrSize,
+    #                                      privateKeyTemplate, arrSize,
+    #                                      &publicKey, &privateKey)
 
     if rv != 0:
         raise Pkcs11Exception(f"C_GenerateKeyPair: {rvToString(hex(rv))}")
