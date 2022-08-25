@@ -406,7 +406,9 @@ rvToStrDict = {
     '0x0' : 'CKR_OK', 
     '0x1' : 'CKR_CANCEL', 
     '0x2' : 'CKR_HOST_MEMORY', 
-    '0x3' : 'CKR_SLOT_ID_INVALID', 
+    '0x3' : 'CKR_SLOT_ID_INVALID',
+    '0x5' : 'CKR_GENERAL_ERROR',
+    '0x6' : 'CKR_FUNCTION_FAILED',
     '0x7' : 'CKR_ARGUMENTS_BAD', 
     '0x8' : 'CKR_NO_EVENT', 
     '0x9' : 'CKR_NEED_TO_CREATE_THREADS', 
@@ -1022,6 +1024,15 @@ vLen = {
 
 }
 
+def dumpBuf(uintBufPtr, bufSz):
+
+    printf("dump buf sz=%d\n",<uintptr_t> bufSz)
+
+    cdef char * buf = <char *> <uintptr_t> uintBufPtr;
+    for i in range(bufSz):
+        printf(" %02x", buf[i])
+    printf("\n")
+
 def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
 
     cdef CK_SESSION_HANDLE session
@@ -1046,18 +1057,26 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
     vLen[0] = sizeof(publicKeyObject)
 
     kPIGost2012_256 =  b"GOST R 34.10-2012 (256 bits) sample key pair ID (Aktiv Co.)"
-    print(f" kPIGost2012_256 {len(kPIGost2012_256)}")
+    cdef int kPIGost2012_256_len = len(kPIGost2012_256)
+    cdef int kPIGost2012_256_sz = kPIGost2012_256_len * sizeof(CK_BYTE)
+    print(f" kPIGost2012_256 len {kPIGost2012_256_len}")
     # print(len(keyPairIdGost2012_256))
     #cdef CK_ATTRIBUTE * publicKeyTemplate = <CK_ATTRIBUTE *> malloc(tSize + 1)
 
-    cdef CK_BYTE * keyPairIdGost2012_256 = <CK_BYTE *> malloc(len(kPIGost2012_256) * sizeof(CK_BYTE))
-    for i in range(len(kPIGost2012_256)):
-        keyPairIdGost2012_256[i] = kPIGost2012_256[i]
+    cdef CK_BYTE * keyPairIdGost2012_256 = <CK_BYTE *> malloc(kPIGost2012_256_sz)
+    for i in range(kPIGost2012_256_len):
+        printf(" %02x", <CK_BYTE>kPIGost2012_256[i])
+        keyPairIdGost2012_256[i] = <CK_BYTE>kPIGost2012_256[i]
+    printf("\n")
 
-    cdef CK_VOID_PTR toVoid1 = keyPairIdGost2012_256
-    voidPTR[1] = <uintptr_t>toVoid1
-    vLen[1] = len(keyPairIdGost2012_256) - 1
-    print(f" keyPairIdGost2012_256 {len(keyPairIdGost2012_256)}")
+    voidPTR[1] = <uintptr_t>keyPairIdGost2012_256
+    vLen[1] = kPIGost2012_256_sz
+
+
+    dumpBuf(voidPTR[1], kPIGost2012_256_sz)
+
+
+
 
     cdef CK_KEY_TYPE keyTypeGostR3410_2012_256 = keyTypes["CKK_GOSTR3410"]
     voidPTR[2] = keyTypeGostR3410_2012_256
@@ -1078,8 +1097,8 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
     for i in range(len(pgR3410_2012_256)):
         parametersGostR3410_2012_256[i] = pgR3410_2012_256[i]
 
-    voidPTR[5] = <uintptr_t>parametersGostR3410_2012_256
-    vLen[5] = len(parametersGostR3410_2012_256)
+    voidPTR[5] = <void>parametersGostR3410_2012_256
+    vLen[5] = len(pgR3410_2012_256)
 
 
     pgR3411_2012_256 = [0x06, 0x08, 0x2a, 0x85, 0x03, 0x07, 0x01, 0x01, 0x02, 0x02]
@@ -1088,8 +1107,8 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
     cdef CK_BYTE * parametersGostR3411_2012_256 = <CK_BYTE *> malloc(len(pgR3411_2012_256) * sizeof(CK_BYTE))
     for i in range(len(pgR3411_2012_256)):
         parametersGostR3411_2012_256[i] = pgR3411_2012_256[i]
-    voidPTR[6] = <uintptr_t>parametersGostR3411_2012_256
-    vLen[6] = len(parametersGostR3411_2012_256)
+    voidPTR[6] = <void>parametersGostR3411_2012_256
+    vLen[6] = len(pgR3411_2012_256)
 
 
     tSize = len(attTypes)
@@ -1100,7 +1119,7 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
     for i in range(len(attTypes)):
         #print(i)
         publicKeyTemplate[i].type = attTypes[i]
-        publicKeyTemplate[i].pValue = <CK_VOID_PTR><uintptr_t>voidPTR[i]
+        publicKeyTemplate[i].pValue = <CK_VOID_PTR>voidPTR[i]
         publicKeyTemplate[i].ulValueLen  = vLen[i]
         # print(f"type Pub {i} : {publicKeyTemplate[i].type}")
         # print(f"pValue Pub {i} :{<uintptr_t>publicKeyTemplate[i].pValue}" )
@@ -1123,7 +1142,7 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
     for i in range(len(attTypes)):
         # print(i)
         privateKeyTemplate[i].type = attTypes[i]
-        privateKeyTemplate[i].pValue = <CK_VOID_PTR><uintptr_t>voidPTR[i]
+        privateKeyTemplate[i].pValue = <CK_VOID_PTR>voidPTR[i]
         privateKeyTemplate[i].ulValueLen  = vLen[i]
         # print(f"type Priv {i} : {privateKeyTemplate[i].type}")
         # print(f"pValue Priv {i} :{<uintptr_t>privateKeyTemplate[i].pValue}" )
@@ -1146,20 +1165,20 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
     # print(<uintptr_t>&publicKey)
     # print(<uintptr_t>&privateKey)
     #
-    for i in range(len(attTypes)):
-        print(f"pubType {i}: {publicKeyTemplate[i].type} | privType {i}: {privateKeyTemplate[i].type}")
-        print(f"pubValue {i}: {<uintptr_t>publicKeyTemplate[i].pValue} | privValue {i}: {<uintptr_t>privateKeyTemplate[i].pValue}")
-        print(f"pubValueLen {i}: {publicKeyTemplate[i].ulValueLen} | privValueLen {i}: {privateKeyTemplate[i].ulValueLen}")
-        print(" ")
+    # for i in range(len(attTypes)):
+    #     print(f"pubType {i}: {publicKeyTemplate[i].type} | privType {i}: {privateKeyTemplate[i].type}")
+    #     print(f"pubValue {i}: {<uintptr_t>publicKeyTemplate[i].pValue} | privValue {i}: {<uintptr_t>privateKeyTemplate[i].pValue}")
+    #     print(f"pubValueLen {i}: {publicKeyTemplate[i].ulValueLen} | privValueLen {i}: {privateKeyTemplate[i].ulValueLen}")
+    #     print(" ")
     # print(publicKeyTemplate)
     # print()
-    rv = functionListI.C_GenerateKeyPair(session, &gostR3410_2012_256KeyPairGenMech,
-                                         publicKeyTemplate, arrSize,
-                                         privateKeyTemplate, arrSize,
-                                         &publicKey, &privateKey)
+    # rv = functionListI.C_GenerateKeyPair(session, &gostR3410_2012_256KeyPairGenMech,
+    #                                      publicKeyTemplate, arrSize,
+    #                                      privateKeyTemplate, arrSize,
+    #                                      &publicKey, &privateKey)
 
     if rv != 0:
-        raise Pkcs11Exception(f"C_GenerateKeyPair: {hex(rv)}")
+        raise Pkcs11Exception(f"C_GenerateKeyPair: {rvToString(hex(rv))}")
 
     print("Gost key pair generated sucessfully\n")
     return 0
