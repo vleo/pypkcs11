@@ -1065,7 +1065,6 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
 
     cdef CK_BYTE * keyPairIdGost2012_256 = <CK_BYTE *> malloc(kPIGost2012_256_sz)
     for i in range(kPIGost2012_256_len):
-        printf(" %02x", <CK_BYTE>kPIGost2012_256[i])
         keyPairIdGost2012_256[i] = <CK_BYTE>kPIGost2012_256[i]
     printf("\n")
 
@@ -1073,7 +1072,7 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
     vLen[1] = kPIGost2012_256_sz
 
 
-    dumpBuf(voidPTR[1], kPIGost2012_256_sz)
+    #dumpBuf(voidPTR[1], kPIGost2012_256_sz)
 
 
 
@@ -1093,23 +1092,29 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
     #keyPairIdGost2012_256 = b"GOST R 34.10-2012 (256 bits) sample key pair ID (Aktiv Co.)"
 
     pgR3410_2012_256 = [0x06, 0x07, 0x2a, 0x85, 0x03, 0x02, 0x02, 0x23, 0x01]
-    cdef CK_BYTE * parametersGostR3410_2012_256 = <CK_BYTE *> malloc(len(pgR3410_2012_256) * sizeof(CK_BYTE))
-    for i in range(len(pgR3410_2012_256)):
+    pgR3410_2012_256_len = len(pgR3410_2012_256)
+    pgR3410_2012_256_sz = len(pgR3410_2012_256) * sizeof(CK_BYTE)
+    cdef CK_BYTE * parametersGostR3410_2012_256 = <CK_BYTE *> malloc(pgR3410_2012_256_sz)
+    for i in range(pgR3410_2012_256_len):
         parametersGostR3410_2012_256[i] = pgR3410_2012_256[i]
 
-    voidPTR[5] = <void>parametersGostR3410_2012_256
-    vLen[5] = len(pgR3410_2012_256)
+    printf("\n")
+    voidPTR[5] = <uintptr_t>parametersGostR3410_2012_256
+    vLen[5] = pgR3410_2012_256_sz
 
+    dumpBuf(voidPTR[5], pgR3410_2012_256_sz)
 
     pgR3411_2012_256 = [0x06, 0x08, 0x2a, 0x85, 0x03, 0x07, 0x01, 0x01, 0x02, 0x02]
+    pgR3411_2012_256_len = len(pgR3411_2012_256)
+    pgR3411_2012_256_sz = len(pgR3411_2012_256) * sizeof(CK_BYTE)
 
-
-    cdef CK_BYTE * parametersGostR3411_2012_256 = <CK_BYTE *> malloc(len(pgR3411_2012_256) * sizeof(CK_BYTE))
-    for i in range(len(pgR3411_2012_256)):
+    cdef CK_BYTE * parametersGostR3411_2012_256 = <CK_BYTE *> malloc(pgR3411_2012_256_sz)
+    for i in range(pgR3411_2012_256_len):
         parametersGostR3411_2012_256[i] = pgR3411_2012_256[i]
-    voidPTR[6] = <void>parametersGostR3411_2012_256
-    vLen[6] = len(pgR3411_2012_256)
+    voidPTR[6] = <uintptr_t>parametersGostR3411_2012_256
+    vLen[6] = pgR3411_2012_256_sz
 
+    dumpBuf(voidPTR[6], pgR3411_2012_256_sz)
 
     tSize = len(attTypes)
     print(f"tSize: {tSize}")
@@ -1165,17 +1170,17 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
     # print(<uintptr_t>&publicKey)
     # print(<uintptr_t>&privateKey)
     #
-    # for i in range(len(attTypes)):
-    #     print(f"pubType {i}: {publicKeyTemplate[i].type} | privType {i}: {privateKeyTemplate[i].type}")
-    #     print(f"pubValue {i}: {<uintptr_t>publicKeyTemplate[i].pValue} | privValue {i}: {<uintptr_t>privateKeyTemplate[i].pValue}")
-    #     print(f"pubValueLen {i}: {publicKeyTemplate[i].ulValueLen} | privValueLen {i}: {privateKeyTemplate[i].ulValueLen}")
-    #     print(" ")
+    for i in range(len(attTypes)):
+        print(f"pubType {i}: {publicKeyTemplate[i].type} | privType {i}: {privateKeyTemplate[i].type}")
+        print(f"pubValue {i}: {<uintptr_t>publicKeyTemplate[i].pValue} | privValue {i}: {<uintptr_t>privateKeyTemplate[i].pValue}")
+        print(f"pubValueLen {i}: {publicKeyTemplate[i].ulValueLen} | privValueLen {i}: {privateKeyTemplate[i].ulValueLen}")
+        print(" ")
     # print(publicKeyTemplate)
     # print()
-    # rv = functionListI.C_GenerateKeyPair(session, &gostR3410_2012_256KeyPairGenMech,
-    #                                      publicKeyTemplate, arrSize,
-    #                                      privateKeyTemplate, arrSize,
-    #                                      &publicKey, &privateKey)
+    rv = functionListI.C_GenerateKeyPair(session, &gostR3410_2012_256KeyPairGenMech,
+                                         publicKeyTemplate, arrSize,
+                                         privateKeyTemplate, arrSize,
+                                         &publicKey, &privateKey)
 
     if rv != 0:
         raise Pkcs11Exception(f"C_GenerateKeyPair: {rvToString(hex(rv))}")
