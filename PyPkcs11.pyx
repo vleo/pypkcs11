@@ -1133,7 +1133,7 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
 
 
     print("\n")
-    # free(publicKeyTemplate)
+
 
     cdef CK_OBJECT_CLASS privateKeyObject = 0x00000003
     cdef CK_VOID_PTR toVoidPriv = &privateKeyObject
