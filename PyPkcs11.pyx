@@ -1029,7 +1029,40 @@ def dumpBuf(uintBufPtr, bufSz):
         printf(" %02x", buf[i])
     printf("\n")
 
-def gen_key_pair(slotsII,pin,functionListUIP,keyPairID,keyType,parametersR3410_2012_256,parametersR3411_2012_256): #, pkTemplate
+class Attribute :
+
+    def __init__(self,attributes):
+        self.attributes = attributes
+
+
+    def get_att(self):
+        newAtt = [[]]
+        for i in range(len(self.attributes)):
+            if self.attributes[i][0] == "CKA_CLASS":
+                att,attSz = self.CKA_CLASS(self.attributes[i][1])
+                newAtt.insert(i,[self.attributes[i][0],att,attSz])
+            if self.attributes[i][0] == "CKA_ID":
+                self.attributes[i][1],add = self.CKA_CLASS(self.attributes[i][1])
+                newAtt.insert(i,[self.attributes[i][0],att,attSz])
+
+        return newAtt
+    def CKA_CLASS(self,att):
+        cdef CK_OBJECT_CLASS publicKeyObject = att
+        cdef CK_VOID_PTR toVoid = &publicKeyObject
+        return <uintptr_t> toVoid ,sizeof(publicKeyObject)
+    def CKA_CLASS(self, att):
+        kPIGost2012_256 = bytearray(str(att), 'utf-8')
+        cdef int kPIGost2012_256_len = len(kPIGost2012_256)
+        cdef int kPIGost2012_256_sz = kPIGost2012_256_len * sizeof(CK_BYTE)
+
+        cdef CK_BYTE * keyPairIdGost2012_256 = <CK_BYTE *> malloc(kPIGost2012_256_sz)
+        for i in range(kPIGost2012_256_len):
+            keyPairIdGost2012_256[i] = <CK_BYTE> kPIGost2012_256[i]
+
+        return <uintptr_t> keyPairIdGost2012_256, kPIGost2012_256_sz
+
+
+def gen_key_pair(slotsII,pin,functionListUIP,keyPairID,keyType,parametersR3410_2012_256,parametersR3411_2012_256,attributes): #, pkTemplate
 
     cdef CK_SESSION_HANDLE session
     cdef CK_RV rv
@@ -1046,7 +1079,10 @@ def gen_key_pair(slotsII,pin,functionListUIP,keyPairID,keyType,parametersR3410_2
     if rv != 0:
         raise Pkcs11Exception(f"C_Login: {hex(rv)}")
 
+    temp1 = Attribute(attributes)
+    print(temp1.get_att())
 
+    exit(0)
     cdef CK_OBJECT_CLASS publicKeyObject = 0x00000002
     cdef CK_VOID_PTR toVoid = &publicKeyObject
     voidPTR[0] =  <uintptr_t>toVoid
