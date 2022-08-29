@@ -1071,22 +1071,26 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
 
     voidPTR[1] = <uintptr_t>keyPairIdGost2012_256
     vLen[1] = kPIGost2012_256_sz
-    #dumpBuf(voidPTR[1], kPIGost2012_256_sz)
+    dumpBuf(voidPTR[1], kPIGost2012_256_sz)
     #print(f"voidPTR[1] {voidPTR[1]}")
 
-    cdef CK_KEY_TYPE keyTypeGostR3410_2012_256 = keyTypes["CKK_GOSTR3410"]
-    voidPTR[2] = keyTypeGostR3410_2012_256
+    cdef CK_KEY_TYPE keyTypeGostR3410_2012_256 = 0x00000030
+    cdef CK_VOID_PTR toVoidKey = &keyTypeGostR3410_2012_256
+    voidPTR[2] =  <uintptr_t>toVoidKey
     vLen[2] = sizeof(keyTypeGostR3410_2012_256)
+
     #print(f"keyTypeGostR3410_2012_256=%d  {keyTypeGostR3410_2012_256}")
 
 
     cdef CK_BBOOL attributeTrue = 1
-    voidPTR[3] = attributeTrue
+    cdef CK_VOID_PTR toVoidTrue = &attributeTrue
+    voidPTR[3] = <uintptr_t>toVoidTrue
     vLen[3] = sizeof(attributeTrue)
 
 
     cdef CK_BBOOL attributeFalse = 0
-    voidPTR[4] = attributeFalse
+    cdef CK_VOID_PTR toVoidFalse = &attributeFalse
+    voidPTR[4] = <uintptr_t>toVoidFalse
     vLen[4] = sizeof(attributeFalse)
 
 
@@ -1124,7 +1128,7 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
     for i in range(pubLen):
         print(i)
         publicKeyTemplate[i].type = <CK_ATTRIBUTE_TYPE>attTypes[i]
-        publicKeyTemplate[i].pValue = <CK_VOID_PTR>voidPTR[i]
+        publicKeyTemplate[i].pValue = <CK_VOID_PTR><uintptr_t>voidPTR[i]
         publicKeyTemplate[i].ulValueLen  = <CK_ULONG>vLen[i]
         # print(f"type Pub {i} : {publicKeyTemplate[i].type}")
         # print(f"pValue Pub {i} :{<uintptr_t>publicKeyTemplate[i].pValue}" )
@@ -1133,14 +1137,14 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
 
 
     print("\n")
-
+    # free(publicKeyTemplate)
 
     cdef CK_OBJECT_CLASS privateKeyObject = 0x00000003
     cdef CK_VOID_PTR toVoidPriv = &privateKeyObject
     voidPTR[0] = <uintptr_t> toVoidPriv
     vLen[0] = sizeof(privateKeyObject)
 
-    voidPTR[4] = attributeTrue
+    voidPTR[4] = <uintptr_t>toVoidTrue
     vLen[4] = sizeof(attributeTrue)
 
     privLen = len(attTypes)
@@ -1150,7 +1154,7 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
     for i in range(privLen):
         # print(i)
         privateKeyTemplate[i].type = attTypes[i]
-        privateKeyTemplate[i].pValue = <CK_VOID_PTR>voidPTR[i]
+        privateKeyTemplate[i].pValue = <CK_VOID_PTR><uintptr_t>voidPTR[i]
         privateKeyTemplate[i].ulValueLen  = vLen[i]
         # print(f"type Priv {i} : {privateKeyTemplate[i].type}")
         # print(f"pValue Priv {i} :{<uintptr_t>privateKeyTemplate[i].pValue}" )
@@ -1173,10 +1177,12 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
 
 
 
-    # rv = functionListI.C_GenerateKeyPair(session, &gostR3410_2012_256KeyPairGenMech,
-    #                                      publicKeyTemplate, pubLen,
-    #                                      privateKeyTemplate, privLen,
-    #                                      &publicKey, &privateKey)
+    rv = functionListI.C_GenerateKeyPair(session, &gostR3410_2012_256KeyPairGenMech,
+                                         publicKeyTemplate, pubLen,
+                                         privateKeyTemplate, privLen,
+                                         &publicKey, &privateKey)
+    print(privateKey)
+    print(publicKey)
 
     if rv != 0:
         raise Pkcs11Exception(f"C_GenerateKeyPair: {rvToString(hex(rv))}")
