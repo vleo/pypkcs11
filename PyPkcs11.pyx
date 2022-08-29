@@ -1002,11 +1002,7 @@ def mechanism_list(slotsII,pin,functionListUIP):
     
     return expMechInfo
 
-keyTypes = {
-    "CKK_GOSTR3410"  : 0x00000030,
-    "CKK_GOSTR3411"  : 0x00000031,
-    "CKK_GOST28147"  : 0x00000032
-    }
+
 
 attTypes = {
     0 : 0x00000000,
@@ -1033,7 +1029,7 @@ def dumpBuf(uintBufPtr, bufSz):
         printf(" %02x", buf[i])
     printf("\n")
 
-def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
+def gen_key_pair(slotsII,pin,functionListUIP,keyPairID,keyType,parametersR3410_2012_256,parametersR3411_2012_256): #, pkTemplate
 
     cdef CK_SESSION_HANDLE session
     cdef CK_RV rv
@@ -1055,32 +1051,22 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
     cdef CK_VOID_PTR toVoid = &publicKeyObject
     voidPTR[0] =  <uintptr_t>toVoid
     vLen[0] = sizeof(publicKeyObject)
-    dumpBuf(voidPTR[0], sizeof(publicKeyObject))
 
-    kPIGost2012_256 =  b"GOST R 34.10-2012 (256 bits) sample key pair ID (Aktiv Co.)"
+    kPIGost2012_256 =  bytearray(str(keyPairID),'utf-8')
     cdef int kPIGost2012_256_len = len(kPIGost2012_256)
     cdef int kPIGost2012_256_sz = kPIGost2012_256_len * sizeof(CK_BYTE)
-    #print(f" kPIGost2012_256 len {kPIGost2012_256_len}")
-    # print(len(keyPairIdGost2012_256))
-    #cdef CK_ATTRIBUTE * publicKeyTemplate = <CK_ATTRIBUTE *> malloc(tSize + 1)
 
     cdef CK_BYTE * keyPairIdGost2012_256 = <CK_BYTE *> malloc(kPIGost2012_256_sz)
     for i in range(kPIGost2012_256_len):
         keyPairIdGost2012_256[i] = <CK_BYTE>kPIGost2012_256[i]
-    # printf("\n")
 
     voidPTR[1] = <uintptr_t>keyPairIdGost2012_256
     vLen[1] = kPIGost2012_256_sz
-    dumpBuf(voidPTR[1], kPIGost2012_256_sz)
-    #print(f"voidPTR[1] {voidPTR[1]}")
 
-    cdef CK_KEY_TYPE keyTypeGostR3410_2012_256 = 0x00000030
+    cdef CK_KEY_TYPE keyTypeGostR3410_2012_256 = keyType
     cdef CK_VOID_PTR toVoidKey = &keyTypeGostR3410_2012_256
     voidPTR[2] =  <uintptr_t>toVoidKey
     vLen[2] = sizeof(keyTypeGostR3410_2012_256)
-
-    #print(f"keyTypeGostR3410_2012_256=%d  {keyTypeGostR3410_2012_256}")
-
 
     cdef CK_BBOOL attributeTrue = 1
     cdef CK_VOID_PTR toVoidTrue = &attributeTrue
@@ -1094,22 +1080,17 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
     vLen[4] = sizeof(attributeFalse)
 
 
-    #keyPairIdGost2012_256 = b"GOST R 34.10-2012 (256 bits) sample key pair ID (Aktiv Co.)"
-
-    pgR3410_2012_256 = [0x06, 0x07, 0x2a, 0x85, 0x03, 0x02, 0x02, 0x23, 0x01]
+    pgR3410_2012_256 = parametersR3410_2012_256
     pgR3410_2012_256_len = len(pgR3410_2012_256)
     pgR3410_2012_256_sz = len(pgR3410_2012_256) * sizeof(CK_BYTE)
     cdef CK_BYTE * parametersGostR3410_2012_256 = <CK_BYTE *> malloc(pgR3410_2012_256_sz)
     for i in range(pgR3410_2012_256_len):
         parametersGostR3410_2012_256[i] = pgR3410_2012_256[i]
 
-    # printf("\n")
     voidPTR[5] = <uintptr_t>parametersGostR3410_2012_256
     vLen[5] = pgR3410_2012_256_sz
-    #dumpBuf(voidPTR[5], pgR3410_2012_256_sz)
 
-
-    pgR3411_2012_256 = [0x06, 0x08, 0x2a, 0x85, 0x03, 0x07, 0x01, 0x01, 0x02, 0x02]
+    pgR3411_2012_256 = parametersR3411_2012_256
     pgR3411_2012_256_len = len(pgR3411_2012_256)
     pgR3411_2012_256_sz = len(pgR3411_2012_256) * sizeof(CK_BYTE)
 
@@ -1118,7 +1099,6 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
         parametersGostR3411_2012_256[i] = pgR3411_2012_256[i]
     voidPTR[6] = <uintptr_t>parametersGostR3411_2012_256
     vLen[6] = pgR3411_2012_256_sz
-    #dumpBuf(voidPTR[6], pgR3411_2012_256_sz)
 
     pubLen = len(attTypes)
     pbSZ = pubLen * sizeof(CK_ATTRIBUTE)
@@ -1126,18 +1106,10 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
     cdef CK_ATTRIBUTE *publicKeyTemplate = <CK_ATTRIBUTE*> malloc(pbSZ)
 
     for i in range(pubLen):
-        print(i)
         publicKeyTemplate[i].type = <CK_ATTRIBUTE_TYPE>attTypes[i]
         publicKeyTemplate[i].pValue = <CK_VOID_PTR><uintptr_t>voidPTR[i]
         publicKeyTemplate[i].ulValueLen  = <CK_ULONG>vLen[i]
-        # print(f"type Pub {i} : {publicKeyTemplate[i].type}")
-        # print(f"pValue Pub {i} :{<uintptr_t>publicKeyTemplate[i].pValue}" )
-        # print(f"ulValueLen Pub {i} : {publicKeyTemplate[i].ulValueLen}")
-        dumpBuf(<uintptr_t> publicKeyTemplate[i].pValue, publicKeyTemplate[i].ulValueLen)
 
-
-    print("\n")
-    # free(publicKeyTemplate)
 
     cdef CK_OBJECT_CLASS privateKeyObject = 0x00000003
     cdef CK_VOID_PTR toVoidPriv = &privateKeyObject
@@ -1152,13 +1124,9 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
     cdef CK_ATTRIBUTE *privateKeyTemplate = <CK_ATTRIBUTE *> malloc(privSize)
 
     for i in range(privLen):
-        # print(i)
         privateKeyTemplate[i].type = attTypes[i]
         privateKeyTemplate[i].pValue = <CK_VOID_PTR><uintptr_t>voidPTR[i]
         privateKeyTemplate[i].ulValueLen  = vLen[i]
-        # print(f"type Priv {i} : {privateKeyTemplate[i].type}")
-        # print(f"pValue Priv {i} :{<uintptr_t>privateKeyTemplate[i].pValue}" )
-        # print(f"ulValueLen Priv {i} : {privateKeyTemplate[i].ulValueLen}")
 
 
     cdef CK_OBJECT_HANDLE privateKey
@@ -1181,8 +1149,8 @@ def gen_key_pair(slotsII,pin,functionListUIP): #, pkTemplate
                                          publicKeyTemplate, pubLen,
                                          privateKeyTemplate, privLen,
                                          &publicKey, &privateKey)
-    print(privateKey)
-    print(publicKey)
+    print(f"publicKey= {publicKey}")
+    print(f"privateKey= {privateKey}")
 
     if rv != 0:
         raise Pkcs11Exception(f"C_GenerateKeyPair: {rvToString(hex(rv))}")
