@@ -1188,6 +1188,7 @@ def gen_key_pair(slotsII,pin,functionListUIP,keyPairID,keyType,parametersR3410_2
 
     for i in range(len(template)):
         print(i)
+        print(type(template[i].ret()[1]))
         dumpBuf(<uintptr_t> template[i].ret()[1],template[i].ret()[2])
         temp1.append(template[i].ret())
 
