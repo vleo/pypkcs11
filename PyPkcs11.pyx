@@ -1029,34 +1029,69 @@ def dumpBuf(uintBufPtr, bufSz):
         printf(" %02x", buf[i])
     printf("\n")
 
-class Attribute :
+# class Attribute :
+#
+#     def __init__(self,attributes):
+#         self.attributes = attributes
+#
+#
+#     def get_att(self):
+#         newAtt = [[]]
+#         for i in range(len(self.attributes)):
+#             if self.attributes[i][0] == "CKA_CLASS":
+#                 att,attSz = self.CKA_CLASS(self.attributes[i][1])
+#                 newAtt.insert(i,[self.attributes[i][0],att,attSz])
+#             if self.attributes[i][0] == "CKA_ID":
+#                 att, attSz = self.CKA_ID(self.attributes[i][1])
+#                 newAtt.insert(i, [self.attributes[i][0], att, attSz])
+#             if self.attributes[i][0] == "CKA_KEY_TYPE":
+#                 att, attSz = self.CKA_KEY_TYPE(self.attributes[i][1])
+#                 newAtt.insert(i, [self.attributes[i][0], att, attSz])
+#             if self.attributes[i][0] == "CKA_TOKEN":
+#                 att, attSz = self.CKA_TOKEN(self.attributes[i][1])
+#                 newAtt.insert(i, [self.attributes[i][0], att, attSz])
+#         return newAtt
+#     def CKA_CLASS(self,att):
+#         cdef CK_OBJECT_CLASS publicKeyObject = att
+#         cdef CK_VOID_PTR toVoid = &publicKeyObject
+#         return <uintptr_t> toVoid ,sizeof(publicKeyObject)
+#     def CKA_ID(self, att):
+#         kPIGost2012_256 = bytearray(str(att), 'utf-8')
+#         cdef int kPIGost2012_256_len = len(kPIGost2012_256)
+#         cdef int kPIGost2012_256_sz = kPIGost2012_256_len * sizeof(CK_BYTE)
+#
+#         cdef CK_BYTE * keyPairIdGost2012_256 = <CK_BYTE *> malloc(kPIGost2012_256_sz)
+#         for i in range(kPIGost2012_256_len):
+#             keyPairIdGost2012_256[i] = <CK_BYTE> kPIGost2012_256[i]
+#
+#         return <uintptr_t> keyPairIdGost2012_256, kPIGost2012_256_sz
+#
+#     def CKA_KEY_TYPE(self, att):
+#         cdef CK_KEY_TYPE keyTypeGostR3410_2012_256 = att
+#         cdef CK_VOID_PTR toVoidKey = &keyTypeGostR3410_2012_256
+#         return <uintptr_t> toVoidKey ,sizeof(keyTypeGostR3410_2012_256)
+#
+#     def CKA_TOKEN(self,att):
+#         cdef CK_BBOOL attributeTrue = att
+#         cdef CK_VOID_PTR toVoidTrue = &attributeTrue
+#         return <uintptr_t> toVoidTrue,  sizeof(attributeTrue)
 
-    def __init__(self,attributes):
-        self.attributes = attributes
+class CKA_CLASS:
+    def __init__(self,attribute):
+        self.attribute = attribute
 
-
-    def get_att(self):
-        newAtt = [[]]
-        for i in range(len(self.attributes)):
-            if self.attributes[i][0] == "CKA_CLASS":
-                att,attSz = self.CKA_CLASS(self.attributes[i][1])
-                newAtt.insert(i,[self.attributes[i][0],att,attSz])
-            if self.attributes[i][0] == "CKA_ID":
-                att, attSz = self.CKA_ID(self.attributes[i][1])
-                newAtt.insert(i, [self.attributes[i][0], att, attSz])
-            if self.attributes[i][0] == "CKA_KEY_TYPE":
-                att, attSz = self.CKA_KEY_TYPE(self.attributes[i][1])
-                newAtt.insert(i, [self.attributes[i][0], att, attSz])
-            if self.attributes[i][0] == "CKA_TOKEN":
-                att, attSz = self.CKA_TOKEN(self.attributes[i][1])
-                newAtt.insert(i, [self.attributes[i][0], att, attSz])
-        return newAtt
-    def CKA_CLASS(self,att):
-        cdef CK_OBJECT_CLASS publicKeyObject = att
+    def ret(self):
+        cdef CK_OBJECT_CLASS publicKeyObject = self.attribute
         cdef CK_VOID_PTR toVoid = &publicKeyObject
-        return <uintptr_t> toVoid ,sizeof(publicKeyObject)
-    def CKA_ID(self, att):
-        kPIGost2012_256 = bytearray(str(att), 'utf-8')
+        return 0x00000000, <uintptr_t> toVoid, sizeof(publicKeyObject)
+
+class CKA_ID:
+    def __init__(self,attribute):
+        self.attribute = attribute
+
+    def ret(self):
+
+        kPIGost2012_256 = bytearray(str(self.attribute), 'utf-8')
         cdef int kPIGost2012_256_len = len(kPIGost2012_256)
         cdef int kPIGost2012_256_sz = kPIGost2012_256_len * sizeof(CK_BYTE)
 
@@ -1064,18 +1099,25 @@ class Attribute :
         for i in range(kPIGost2012_256_len):
             keyPairIdGost2012_256[i] = <CK_BYTE> kPIGost2012_256[i]
 
-        return <uintptr_t> keyPairIdGost2012_256, kPIGost2012_256_sz
+        return 0x00000102,<uintptr_t> keyPairIdGost2012_256, kPIGost2012_256_sz
 
-    def CKA_KEY_TYPE(self, att):
-        cdef CK_KEY_TYPE keyTypeGostR3410_2012_256 = att
-        cdef CK_VOID_PTR toVoidKey = &keyTypeGostR3410_2012_256
-        return <uintptr_t> toVoidKey ,sizeof(keyTypeGostR3410_2012_256)
+class CKA_KEY_TYPE:
+    def __init__(self,attribute):
+        self.attribute = attribute
 
-    def CKA_TOKEN(self,att):
-        cdef CK_BBOOL attributeTrue = att
+    def ret(self):
+        cdef CK_BBOOL attributeTrue = self.attribute
         cdef CK_VOID_PTR toVoidTrue = &attributeTrue
-        return <uintptr_t> toVoidTrue,  sizeof(attributeTrue)
+        return 0x00000100,<uintptr_t> toVoidTrue, sizeof(attributeTrue)
 
+class CKA_TOKEN:
+    def __init__(self, attribute):
+        self.attribute = attribute
+
+    def ret(self):
+        cdef CK_KEY_TYPE keyTypeGostR3410_2012_256 = self.attribute
+        cdef CK_VOID_PTR toVoidKey = &keyTypeGostR3410_2012_256
+        return 0x00000001,<uintptr_t> toVoidKey, sizeof(keyTypeGostR3410_2012_256)
 
 def gen_key_pair(slotsII,pin,functionListUIP,keyPairID,keyType,parametersR3410_2012_256,parametersR3411_2012_256,attributes): #, pkTemplate
 
@@ -1094,8 +1136,8 @@ def gen_key_pair(slotsII,pin,functionListUIP,keyPairID,keyType,parametersR3410_2
     if rv != 0:
         raise Pkcs11Exception(f"C_Login: {hex(rv)}")
 
-    temp1 = Attribute(attributes)
-    print(temp1.get_att())
+    # temp1 = Attribute(attributes).get_att()
+    # print(temp1)
 
     exit(0)
 
