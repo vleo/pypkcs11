@@ -1077,21 +1077,18 @@ def dumpBuf(uintBufPtr, bufSz):
 #         return <uintptr_t> toVoidTrue,  sizeof(attributeTrue)
 
 class CKA_CLASS:
-    def __init__(self,firAtt,secAtt):
-        self.firAtt = firAtt
-        self.secAtt = secAtt
+    def __init__(self,Att):
+        self.Att = Att
 
     def ret(self):
-        cdef CK_OBJECT_CLASS publicKeyObject = 0x00000002#self.firAtt
-        printf("publicKeyObject%d p:\n",publicKeyObject)
-        cdef CK_VOID_PTR pubToVoid = &publicKeyObject
-        cdef CK_OBJECT_CLASS privateKeyObject = self.secAtt
-        cdef CK_VOID_PTR privToVoid = &privateKeyObject
+        cdef CK_OBJECT_CLASS publicKeyObject = self.Att
 
-        dumpBuf(<uintptr_t>pubToVoid,sizeof(publicKeyObject))
-        dumpBuf(<uintptr_t>privToVoid, sizeof(privateKeyObject))
-        return 0x00000000, <uintptr_t>pubToVoid, sizeof(publicKeyObject) ,\
-               0x00000000, <uintptr_t>privToVoid, sizeof(privateKeyObject)
+        cdef CK_VOID_PTR pubToVoid = &publicKeyObject
+
+
+        #dumpBuf(<uintptr_t>pubToVoid,sizeof(publicKeyObject))
+        return 0x00000000, <uintptr_t>pubToVoid, sizeof(publicKeyObject)
+
 
 class CKA_ID:
     def __init__(self,attribute):
@@ -1128,17 +1125,15 @@ class CKA_TOKEN:
         return 0x00000001, <uintptr_t>toVoidTrue, sizeof(attributeTrue)
 
 class CKA_PRIVATE:
-    def __init__(self, firAtt, secAtt):
-        self.firAtt = firAtt
-        self.secAtt = secAtt
+    def __init__(self, Att):
+        self.Att = Att
+
 
     def ret(self):
-        cdef CK_BBOOL attributePublic = self.firAtt
-        cdef CK_VOID_PTR toVoidPublic = &attributePublic
-        cdef CK_BBOOL attributePrivate = self.secAtt
-        cdef CK_VOID_PTR toVoidPrivate = &attributePrivate
-        return 0x00000002, <uintptr_t>toVoidPublic, sizeof(attributePublic),\
-               0x00000002, <uintptr_t>toVoidPrivate, sizeof(attributePrivate)
+        cdef CK_BBOOL attribute = self.Att
+        cdef CK_VOID_PTR toVoid= &attribute
+
+        return 0x00000002, <uintptr_t>toVoid, sizeof(attribute)
 
 class CKA_GOSTR3410_PARAMS:
     def __init__(self, attribute):
@@ -1190,19 +1185,13 @@ def gen_key_pair(slotsII,pin,functionListUIP,keyPairID,keyType,parametersR3410_2
     if rv != 0:
         raise Pkcs11Exception(f"C_Login: {hex(rv)}")
     temp1 = []
-    temp2 = []
-    for i in range(len(template)):
-        tAdd = template[i].ret()
-        if tAdd[0] == 0x00000000 or tAdd[0] == 0x00000002:
 
-            temp1.append((tAdd[0],<uintptr_t>tAdd[1],tAdd[2]))
-            temp2.append((tAdd[3], <uintptr_t>tAdd[4], tAdd[5]))
-        else:
-            temp1.append(tAdd)
-            temp2.append(tAdd)
+    for i in range(len(template)):
+        print(i)
+        dumpBuf(<uintptr_t> template[i].ret()[1],template[i].ret()[2])
+        temp1.append(template[i].ret())
 
     print(temp1)
-    print(temp2)
 
 
 
@@ -1264,10 +1253,11 @@ def gen_key_pair(slotsII,pin,functionListUIP,keyPairID,keyType,parametersR3410_2
 
     cdef CK_ATTRIBUTE *publicKeyTemplate = <CK_ATTRIBUTE*> malloc(pbSZ)
 
+
     for i in range(pubLen):
+        print(i)
         publicKeyTemplate[i].type = temp1[i][0]
         publicKeyTemplate[i].pValue = <CK_VOID_PTR><uintptr_t>temp1[i][1]
-        dumpBuf( <uintptr_t> temp1[i][1], sizeof(temp1[i][1]))
         publicKeyTemplate[i].ulValueLen  = temp1[i][2]
         dumpBuf(<uintptr_t> publicKeyTemplate[i].pValue, publicKeyTemplate[i].ulValueLen)
 
@@ -1298,11 +1288,11 @@ def gen_key_pair(slotsII,pin,functionListUIP,keyPairID,keyType,parametersR3410_2
     gostR3410_2012_256KeyPairGenMech = CK_MECHANISM(0x00001200, cython.NULL, 0)
 
 
-    for i in range(len(attTypes)):
-        print(f"pubType {i}: {publicKeyTemplate[i].type} | temp1 {i}: {temp1[i][0]} | privType {i}: {privateKeyTemplate[i].type}")
-        print(f"pubValue {i}: {<uintptr_t>publicKeyTemplate[i].pValue} | temp1 {i}: {temp1[i][1]} privValue {i}: {<uintptr_t>privateKeyTemplate[i].pValue}")
-        print(f"pubValueLen {i}: {publicKeyTemplate[i].ulValueLen} | temp1 {i}: {temp1[i][2]} privValueLen {i}: {privateKeyTemplate[i].ulValueLen}")
-        print(" ")
+    # for i in range(len(attTypes)):
+    #     print(f"pubType {i}: {publicKeyTemplate[i].type} | temp1 {i}: {temp1[i][0]} | privType {i}: {privateKeyTemplate[i].type}")
+    #     print(f"pubValue {i}: {<uintptr_t>publicKeyTemplate[i].pValue} | temp1 {i}: {temp1[i][1]} privValue {i}: {<uintptr_t>privateKeyTemplate[i].pValue}")
+    #     print(f"pubValueLen {i}: {publicKeyTemplate[i].ulValueLen} | temp1 {i}: {temp1[i][2]} privValueLen {i}: {privateKeyTemplate[i].ulValueLen}")
+    #     print(" ")
 
 
 
