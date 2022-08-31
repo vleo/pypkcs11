@@ -1080,14 +1080,20 @@ class CKA_CLASS:
     def __init__(self,Att):
         self.Att = Att
 
-    def ret(self):
+    def ret(self, teplate_atr_ptr ):
         cdef CK_OBJECT_CLASS publicKeyObject = self.Att
 
         cdef CK_VOID_PTR pubToVoid = &publicKeyObject
 
+        template_atr_ptr.type = emp1[i][0]
+        publicKeyTemplate[i].pValue = <CK_VOID_PTR><uintptr_t>temp1[i][1]
+        publicKeyTemplate[i].ulValueLen  = temp1[i][2]
+
 
         #dumpBuf(<uintptr_t>pubToVoid,sizeof(publicKeyObject))
         return 0x00000000, <uintptr_t>pubToVoid, sizeof(publicKeyObject)
+
+        return
 
 
 class CKA_ID:
@@ -1151,7 +1157,7 @@ class CKA_GOSTR3410_PARAMS:
             parametersGostR3410_2012_256[i] = int(pgR3410_2012_256[i],16)
 
         return 0x00000250, <uintptr_t> parametersGostR3410_2012_256, pgR3410_2012_256_sz
-
+template[i].ret(
 class CKA_GOSTR3411_PARAMS:
     def __init__(self, attribute):
         self.attribute = attribute
@@ -1172,7 +1178,7 @@ def gen_key_pair(slotsII,pin,functionListUIP,keyPairID,keyType,parametersR3410_2
 
     cdef CK_SESSION_HANDLE session
     cdef CK_RV rv
-    cdef CK_FUNCTION_LIST_PTR functionListI = <CK_FUNCTION_LIST_PTR> <uintptr_t> functionListUIP
+    cdef CK_FUNCTION_LIST_PTR funpublicKeyTemplatectionListI = <CK_FUNCTION_LIST_PTR> <uintptr_t> functionListUIP
     cdef CK_SLOT_ID slotID = slotsII[0]
 
     soPin = bytearray(str(pin),'utf-8')
@@ -1257,9 +1263,10 @@ def gen_key_pair(slotsII,pin,functionListUIP,keyPairID,keyType,parametersR3410_2
 
     for i in range(pubLen):
         print(i)
-        publicKeyTemplate[i].type = temp1[i][0]
-        publicKeyTemplate[i].pValue = <CK_VOID_PTR><uintptr_t>temp1[i][1]
-        publicKeyTemplate[i].ulValueLen  = temp1[i][2]
+        teplate[i].ret(<uintptr_t>&publicKeyTemplate[i])
+#        publicKeyTemplate[i].type = temp1[i][0]
+#        publicKeyTemplate[i].pValue = <CK_VOID_PTR><uintptr_t>temp1[i][1]
+#        publicKeyTemplate[i].ulValueLen  = temp1[i][2]
         dumpBuf(<uintptr_t> publicKeyTemplate[i].pValue, publicKeyTemplate[i].ulValueLen)
 
 
