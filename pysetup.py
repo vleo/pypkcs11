@@ -10,5 +10,10 @@ extList= [Extension(
 )]
 
 
-setup( ext_modules = cythonize(extList) )
+setup( ext_modules =
+    cythonize(
+        extList,
+        language_level = "3"
+    )
+)
 

@@ -1,5 +1,6 @@
 #!/usr/bin/python3
-import PyPkcs11
+import pyximport
+pyximport.install()
 from PyPkcs11 import CKA_CLASS
 from PyPkcs11 import CKA_ID
 from PyPkcs11 import CKA_KEY_TYPE
@@ -8,10 +9,26 @@ from PyPkcs11 import CKA_PRIVATE
 from PyPkcs11 import CKA_GOSTR3410_PARAMS
 from PyPkcs11 import CKA_GOSTR3411_PARAMS
 
-functionListUIP, functionListExUIP = PyPkcs11.init_pkcs11("./librtpkcs11ecp.so")
-# print(functionListUIP)
+from PyPkcs11 import Pkcs11Connection
 
-slotsList = PyPkcs11.get_slots_list(functionListUIP)
+conn = Pkcs11Connection("librtpkcs11ecp.so")
+
+conn.fill_slots_list()
+
+print("Slots list: ", conn.slots)
+
+if len(conn.slots) == 0:
+    quit()
+
+conn.fill_mechanism_list()
+
+
+print("Mech list: ", conn.mechanisms)
+
+conn.free_pkcs11()
+
+exit(0)
+
 keyPairID = "GOST R 34.10-2012 (256 bits) sample key pair ID (Aktiv Co.)"
 keyTypes = {
     "CKK_GOSTR3410": 0x00000030,
