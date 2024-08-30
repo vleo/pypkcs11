@@ -912,7 +912,7 @@ attrGOST28147_89SecKey[2] = CK_ATTRIBUTE(ckaS2UL['CKA_ID'], SecKeyID_uchar_ptr, 
 attrGOST28147_89SecKey[3] = CK_ATTRIBUTE(ckaS2UL['CKA_KEY_TYPE'], &KeyType, sizeof(KeyType))
 attrGOST28147_89SecKey[4] = CK_ATTRIBUTE(ckaS2UL['CKA_ENCRYPT'], &bTrue, sizeof(bTrue))
 attrGOST28147_89SecKey[5] = CK_ATTRIBUTE(ckaS2UL['CKA_DECRYPT'], &bTrue, sizeof(bTrue))
-attrGOST28147_89SecKey[6] = CK_ATTRIBUTE(ckaS2UL['CKA_TOKEN'], &bTrue, sizeof(bTrue))
+attrGOST28147_89SecKey[6] = CK_ATTRIBUTE(ckaS2UL['CKA_TOKEN'], &bFalse, sizeof(bFalse))
 attrGOST28147_89SecKey[7] = CK_ATTRIBUTE(ckaS2UL['CKA_PRIVATE'], &bFalse, sizeof(bFalse))
 attrGOST28147_89SecKey[8] = CK_ATTRIBUTE(ckaS2UL['CKA_GOST28147_PARAMS'], GOST28147params_uchar_ptr, len(GOST28147params))
 
