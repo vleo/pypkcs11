@@ -15,18 +15,19 @@ from PyPkcs11 import CKA_GOSTR3411_PARAMS
 
 from PyPkcs11 import Pkcs11Connection
 
-conn = Pkcs11Connection("/usr/lib64/librtpkcs11ecp.so")
+conn = Pkcs11Connection("/opt/aktivco/rutokenecp/x86_64/librtpkcs11ecp.so")
+#conn = Pkcs11Connection("/home/vleo/SBT/SBERCA/HSM/RUTOKEN/rutoken-sdk-latest_zip/sdk/pkcs11/lib/linux_glibc-x86_64/librtpkcs11ecp.so")
 
 conn.fill_slots_list()
 
-print("Slots list: ", conn.slots)
+print("Slots list: ", "\n".join([str(v) for v in conn.slots]))
 
 if len(conn.slots) == 0:
     quit()
 
 conn.fill_mechanism_list()
 
-print("Mech list: ", "\n".join(conn.mechanisms))
+#print("Mech list: ", "\n".join(conn.mechanisms))
 
 #conn.format_token("87654321", "12345678", "myVlRutoken")
 

@@ -821,6 +821,7 @@ ckaS2UL = {
     'CKA_TOKEN'            : 0x00000001,
     'CKA_PRIVATE'          : 0x00000002,
     'CKA_LABEL'            : 0x00000003,
+    'CKA_VALUE'            : 0x00000011,
     'CKA_ID'               : 0x00000102,
     'CKA_KEY_TYPE'         : 0x00000100,
     'CKA_ENCRYPT'          : 0x00000104,
@@ -851,17 +852,24 @@ ckk2UL = {
 
 cdef CK_BBOOL CK_TRUE = 1
 cdef CK_BBOOL CK_FALSE = 0
+
+#/* Размер симметричного ключа ГОСТ 28147-89 в байтах */
+cdef CK_ULONG GOST_28147_KEY_SIZE = 32
+
 def dumpBuf(uintBufPtr: int, bufSz: int):
 
     printf("dump buf sz=%d\n",<uintptr_t> bufSz)
 
     cdef unsigned char * buf = <unsigned char *> <uintptr_t> uintBufPtr;
+    nlf = None
     for i in range(bufSz):
         printf(" 0x%02x", buf[i])
+        nlf = True
         if (i%8 == 7):
             printf("\n")
-    printf("\n")
-
+            nlf = False
+    if nlf:
+        printf("\n")
 
 cdef CK_BYTE_PTR bytesToCharPtr(bytes bts):
     bts_len = len(bts)
@@ -872,53 +880,53 @@ cdef CK_BYTE_PTR bytesToCharPtr(bytes bts):
 #    print(1, chr(bts_uchar_ptr[1]))
     return bts_uchar_ptr
 
-cdef CK_OBJECT_CLASS ocSecKey        = cko2UL['CKO_SECRET_KEY']
-dumpBuf(<uintptr_t>&ocSecKey, sizeof(ocSecKey))
+from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 
-SecKeyLabel = b"GOST Secret Key"
-cdef CK_UTF8CHAR* SecKeyLabel_uchar_ptr = bytesToCharPtr(SecKeyLabel)
-dumpBuf(<uintptr_t>SecKeyLabel_uchar_ptr, len(SecKeyLabel)+1)
-
-SecKeyID = b"GOST Secret Key"
-cdef CK_BYTE_PTR SecKeyID_uchar_ptr = bytesToCharPtr(SecKeyID)
-dumpBuf(<uintptr_t>SecKeyID_uchar_ptr, len(SecKeyID)+1)
-
-cdef CK_KEY_TYPE     KeyType    = ckk2UL['CKK_GOST28147']
-dumpBuf(<uintptr_t>&KeyType, sizeof(KeyType))
-cdef CK_BBOOL        bTrue           = CK_TRUE
-dumpBuf(<uintptr_t> &bTrue, sizeof(bTrue))
-cdef CK_BBOOL        bFalse          = CK_FALSE
-dumpBuf(<uintptr_t> &bFalse, sizeof(bFalse))
-#/* Набор параметров КриптоПро A алгоритма ГОСТ 28147-89 */
-GOST28147params = [ 0x06, 0x07, 0x2a, 0x85, 0x03, 0x02, 0x02, 0x1f, 0x01 ]
-print(len(GOST28147params))
-cdef CK_BYTE_PTR     GOST28147params_uchar_ptr = <CK_BYTE_PTR> malloc(len(GOST28147params)*sizeof(CK_BYTE))
-for i in range(len(GOST28147params)):
-    GOST28147params_uchar_ptr[i] = GOST28147params[i]
-dumpBuf(<uintptr_t> GOST28147params_uchar_ptr, len(GOST28147params))
-
-cdef struct CK_ATTRIBUTE_LOC:
+cdef struct CK_ATTRIBUTE_loc:
     CK_ATTRIBUTE_TYPE type
     CK_VOID_PTR pValue
     CK_ULONG ulValueLen
 
-#<CK_ATTRIBUTE> CK_ATTRIBUTE(ckaS2UL['CKA_CLASS'], <CK_OBJECT_CLASS*> &ocSecKey, sizeof(ocSecKey))
+cdef class CK_ATTRIBUTE_class:
+    cdef CK_ATTRIBUTE_loc ck_attribute
+    def __cinit__(self, CK_ATTRIBUTE_TYPE type_ini, uintptr_t pValue_ini, CK_ULONG ulValueLen_ini):
+        self.ck_attribute.type = type_ini
+        self.ck_attribute.pValue = <CK_VOID_PTR> pValue_ini
+        self.ck_attribute.ulValueLen = ulValueLen_ini
+    cdef CK_ATTRIBUTE_loc ck_attrib(self) :
+        return self.ck_attribute
 
-cdef CK_ATTRIBUTE attrGOST28147_89SecKey[9]
+cdef CK_OBJECT_CLASS ocSecKey = cko2UL['CKO_SECRET_KEY']
 
-attrGOST28147_89SecKey[0] = CK_ATTRIBUTE(ckaS2UL['CKA_CLASS'], &ocSecKey, sizeof(ocSecKey))
-attrGOST28147_89SecKey[1] = CK_ATTRIBUTE(ckaS2UL['CKA_LABEL'], SecKeyLabel_uchar_ptr, len(SecKeyLabel))
-attrGOST28147_89SecKey[2] = CK_ATTRIBUTE(ckaS2UL['CKA_ID'], SecKeyID_uchar_ptr, len(SecKeyID))
-attrGOST28147_89SecKey[3] = CK_ATTRIBUTE(ckaS2UL['CKA_KEY_TYPE'], &KeyType, sizeof(KeyType))
-attrGOST28147_89SecKey[4] = CK_ATTRIBUTE(ckaS2UL['CKA_ENCRYPT'], &bTrue, sizeof(bTrue))
-attrGOST28147_89SecKey[5] = CK_ATTRIBUTE(ckaS2UL['CKA_DECRYPT'], &bTrue, sizeof(bTrue))
-attrGOST28147_89SecKey[6] = CK_ATTRIBUTE(ckaS2UL['CKA_TOKEN'], &bFalse, sizeof(bFalse))
-attrGOST28147_89SecKey[7] = CK_ATTRIBUTE(ckaS2UL['CKA_PRIVATE'], &bFalse, sizeof(bFalse))
-attrGOST28147_89SecKey[8] = CK_ATTRIBUTE(ckaS2UL['CKA_GOST28147_PARAMS'], GOST28147params_uchar_ptr, len(GOST28147params))
+SecKeyLabel = b"GOST Secret Key"
+cdef CK_UTF8CHAR * SecKeyLabel_uchar_ptr = bytesToCharPtr(SecKeyLabel)
 
-dumpBuf(<uintptr_t>attrGOST28147_89SecKey[0].pValue, attrGOST28147_89SecKey[0].ulValueLen)
-dumpBuf(<uintptr_t>attrGOST28147_89SecKey[1].pValue, attrGOST28147_89SecKey[1].ulValueLen)
-dumpBuf(<uintptr_t>attrGOST28147_89SecKey[8].pValue, attrGOST28147_89SecKey[8].ulValueLen)
+SecKeyID = b"GOST Secret Key"
+cdef CK_BYTE_PTR SecKeyID_uchar_ptr = bytesToCharPtr(SecKeyID)
+
+cdef CK_KEY_TYPE KeyType = ckk2UL['CKK_GOST28147']
+cdef CK_BBOOL bTrue = CK_TRUE
+cdef CK_BBOOL bFalse = CK_FALSE
+
+#/* Набор параметров КриптоПро A алгоритма ГОСТ 28147-89 */
+cdef CK_BYTE[9] GOST28147params = [0x06, 0x07, 0x2a, 0x85, 0x03, 0x02, 0x02, 0x1f, 0x01]
+
+from random import randbytes
+cdef CK_BYTE[32] keyValue = randbytes(32)
+
+cdef CK_ATTRIBUTE[10] attrGOST28147_89SecKey = [
+    CK_ATTRIBUTE(ckaS2UL['CKA_CLASS'], &ocSecKey, sizeof(ocSecKey)),
+    CK_ATTRIBUTE(ckaS2UL['CKA_LABEL'], SecKeyLabel_uchar_ptr, len(SecKeyLabel)),
+    CK_ATTRIBUTE(ckaS2UL['CKA_ID'], SecKeyID_uchar_ptr, len(SecKeyID)),
+    CK_ATTRIBUTE(ckaS2UL['CKA_KEY_TYPE'], &KeyType, sizeof(KeyType)),
+    CK_ATTRIBUTE(ckaS2UL['CKA_ENCRYPT'], &bTrue, sizeof(bTrue)),
+    CK_ATTRIBUTE(ckaS2UL['CKA_DECRYPT'], &bTrue, sizeof(bTrue)),
+    CK_ATTRIBUTE(ckaS2UL['CKA_TOKEN'], &bFalse, sizeof(bFalse)),
+    CK_ATTRIBUTE(ckaS2UL['CKA_PRIVATE'], &bTrue, sizeof(bTrue)),
+    CK_ATTRIBUTE(ckaS2UL['CKA_GOST28147_PARAMS'], &GOST28147params, len(GOST28147params)),
+    CK_ATTRIBUTE(ckaS2UL['CKA_VALUE'], &keyValue, sizeof(keyValue)),
+]
+
 
 class Pkcs11Connection:
 
@@ -1152,6 +1160,7 @@ class Pkcs11Connection:
         cdef CK_FUNCTION_LIST_PTR functionListI = <CK_FUNCTION_LIST_PTR> <uintptr_t> self.functionListUIP
 
         rv = functionListI.C_OpenSession(self.slots[slotIx], str2sessonFlag['CKF_SERIAL_SESSION'] | str2sessonFlag['CKF_RW_SESSION'], cython.NULL, cython.NULL, &session)
+#        rv = functionListI.C_OpenSession(self.slots[slotIx], str2sessonFlag['CKF_SERIAL_SESSION'], cython.NULL, cython.NULL, &session)
         if rv != 0:
             raise Pkcs11Exception(f"C_OpenSession: {hex(rv)}")
 
@@ -1337,56 +1346,29 @@ class Pkcs11Connection:
         cdef CK_SESSION_HANDLE session = <CK_SESSION_HANDLE> <uintptr_t> self.sessionUIP
         cdef CK_RV rv
 
-        cdef CK_ULONG array_sz = sizeof(attrGOST28147_89SecKey)
-        cdef CK_ULONG elem_sz = sizeof(attrGOST28147_89SecKey[0])
-        cdef CK_ULONG elem_num = array_sz // elem_sz
+        cdef CK_ULONG arraysize = sizeof(attrGOST28147_89SecKey)//sizeof(attrGOST28147_89SecKey[0])
 
-        printf("sizeof secretKeyAttribs: %d %d %d\n", array_sz, elem_sz, elem_num)
+        print(f"arraysize secretKeyAttribs: ", arraysize)
 
         dumpBuf(<uintptr_t>&keyGenMech,sizeof(keyGenMech))
-        dumpBuf(<uintptr_t>attrGOST28147_89SecKey, 216)
+        #dumpBuf(<uintptr_t>attrGOST28147_89SecKey, 216)
+        for i in range(arraysize):
+            printf("0x%08x ", attrGOST28147_89SecKey[i].type)
+            dumpBuf(<uintptr_t> attrGOST28147_89SecKey[i].pValue, attrGOST28147_89SecKey[i].ulValueLen)
 
-        rv = functionListI.C_GenerateKey(session,
-                                         &keyGenMech,
+        #rv = functionListI.C_GenerateKey(session,
+        rv = functionListI.C_CreateObject(session,
+                                         #&keyGenMech,
                                          attrGOST28147_89SecKey,
-                                         elem_num,
+                                         arraysize,
                                          &hSecKey
                                          )
         if rv != 0:
-            raise Pkcs11Exception(f"C_GenerateKey: {hex(rv)} : {rv2str[rv]}")
+            #raise Pkcs11Exception(f"C_GenerateKey: {hex(rv)} : {rv2str[rv]}")
+            raise Pkcs11Exception(f"C_CreateObject: {hex(rv)} : {rv2str[rv]}")
 
         print("28147 key generated sucessfully\n")
 
-
-
-#/* Вычисление размера массива */
-##define          arraysize(a)   (sizeof(a)/sizeof(a[0]))
-#
-#CK_MECHANISM     KeyGenMech  = {CKM_GOST28147_KEY_GEN, NULL_PTR, 0}; // Генерация ключа ГОСТ 28147-89. Для генерации секретных ключей Кузнечик и Магма нужно использовать механизмы CKM_KUZNECHIK_KEY_GEN и CKM_MAGMA_KEY_GEN
-#
-#CK_OBJECT_HANDLE hSecKey     = NULL_PTR;                            // Хэндл cекретного ключа
-#
-#...
-#printf("\n Generating key");
-#rv = pFunctionList->C_GenerateKey(hSession,                             // Хэндл открытой сессии
-#                                  &KeyGenMech,                          // Используемый механизм генерации ключа
-#                                  attrGOST28147_89SecKey,               // Шаблон для создания секретного ключа
-#                                  arraysize(attrGOST28147_89SecKey),    // Размер шаблона секретного ключа
-#                                  &hSecKey);                            // Хэндл секретного ключа
-#if (rv != CKR_OK)
-#    printf(" -> Failed\n");
-#else
-#    printf(" -> OK\n");
-#
-
-
-
-
-# class CK_ATTRIB:
-#     def retPtr(self):
-#         return <uintptr_t> ck_attrib_ptr
-#     def retData(self):
-#         return ck_attrib.type, (<CK_ULONG *> ck_attrib.pValue)[0], ck_attrib.ulValueLen
 
 cdef class CKA_CLASS:
     cdef int Att
