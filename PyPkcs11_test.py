@@ -1,8 +1,8 @@
 #!/usr/bin/python3.11
 
-import pyximport
+#import pyximport
 
-pyximport.install()
+#pyximport.install()
 from PyPkcs11 import dumpBuf
 
 from PyPkcs11 import CKA_CLASS
@@ -20,25 +20,45 @@ conn = Pkcs11Connection("/opt/aktivco/rutokenecp/x86_64/librtpkcs11ecp.so")
 
 conn.fill_slots_list()
 
-print("Slots list: ", "\n".join([str(v) for v in conn.slots]))
+print("Slots list:\n", "\n".join([str(v) for v in conn.slots]))
 
 if len(conn.slots) == 0:
-    quit()
+    quit(1)
 
 conn.fill_mechanism_list()
 
-#print("Mech list: ", "\n".join(conn.mechanisms))
+#print("Slots list:\n", "\n".join([str(v) for v in conn.slots]))
 
 #conn.format_token("87654321", "12345678", "myVlRutoken")
 
-if conn.slots == 0:
+if len(conn.slots) == 0:
     quit(2)
 
 conn.open_session(0)
 
 conn.login("12345678")
+#conn.login("87654321")
 
-conn.gen_key_symm()
+##conn.gen_key_symm()
+
+#conn.gen_key_symm_kuznechik(0, "rootcavc_01")
+
+##conn.upload_key_symm()
+
+encKeysCnt, encKeysUIP = conn.findKuznechikSecretKey("rootcavc_01")
+
+print(f"encKeysCnt = {encKeysCnt:d} encKeysPtr = {encKeysUIP:d}")
+
+#plainTextStr = "Quick Brown Fox Jumps over the Lazy Dog 0123456789 Times!"
+plainTextStr = "0123456789ABCDEF0123456789ABCDEf"
+
+encryptedSize, encrypted, encryptedBytes = conn.encryptKuznechik(encKeysCnt, encKeysUIP, plainTextStr)
+print(f"encryptedSize = {encryptedSize:d} encrypted = {encrypted:d} encryptedBytes hex = {encryptedBytes.hex(' ')}")
+
+#dumpBuf(encrypted, encryptedSize)
+
+plainTextSize, decrypted, decryptedStr = conn.decryptKuznechik(encKeysCnt, encKeysUIP, encryptedBytes)
+print(f"plainTextSize = {plainTextSize:d} decrypted = {decrypted:d} decryptedStr = {decryptedStr:s}")
 
 conn.free_pkcs11()
 
