@@ -1007,7 +1007,6 @@ class Pkcs11Connection:
 
         self.functionListUIP = <uintptr_t> functionListI
         self.functionListExUIP = <uintptr_t> functionListExI
-        self.sessionUIP = <uintptr_t> cython.NULL
         self.slots = []
 
 ########################### FREE #####################################
@@ -1117,7 +1116,7 @@ class Pkcs11Connection:
             self.slots[slotID]["mc"] = i
 
 ########################### FORMAT TOKEN #####################################
-    def format_token(self, soPin, pin, label, slotNo):
+    def format_token(self, slotNo, soPin, pin, label):
 
         cdef CK_FUNCTION_LIST_EXTENDED_PTR functionListExI = <CK_FUNCTION_LIST_EXTENDED_PTR><uintptr_t> self.functionListExUIP
         cdef CK_SLOT_ID slot = self.slots[slotNo]["si"]
@@ -1159,20 +1158,24 @@ class Pkcs11Connection:
         printf("Token has been formatted successfully.\n")
 
 
-    def open_session(self, slotNo):
+    def open_sessions(self):
         cdef CK_SESSION_HANDLE session
         cdef CK_RV rv
 
         cdef CK_FUNCTION_LIST_PTR functionListI = <CK_FUNCTION_LIST_PTR> <uintptr_t> self.functionListUIP
+        ix = 0
+        for se in self.slots:
+            slotID = se["si"]
 
-        rv = functionListI.C_OpenSession(self.slots[slotNo]["si"], str2sessonFlag['CKF_SERIAL_SESSION'] | str2sessonFlag['CKF_RW_SESSION'], cython.NULL, cython.NULL, &session)
-        if rv != 0:
-            raise Pkcs11Exception(f"C_OpenSession: {hex(rv)}")
+            rv = functionListI.C_OpenSession(slotID, str2sessonFlag['CKF_SERIAL_SESSION'] | str2sessonFlag['CKF_RW_SESSION'], cython.NULL, cython.NULL, &session)
+            if rv != 0:
+                raise Pkcs11Exception(f"C_OpenSession: {hex(rv)}")
 
-        self.sessionUIP = <uintptr_t> session
+            self.slots[ix]["sessionUIP"] = <uintptr_t> session
+            ix += 1
 
-    def login(self, pin):
-        cdef CK_SESSION_HANDLE session = <CK_SESSION_HANDLE> <uintptr_t> self.sessionUIP
+    def login(self, slotNo, pin):
+        cdef CK_SESSION_HANDLE session = <CK_SESSION_HANDLE> <uintptr_t> self.slots[slotNo]["sessionUIP"]
         cdef CK_FUNCTION_LIST_PTR functionListI = <CK_FUNCTION_LIST_PTR> <uintptr_t> self.functionListUIP
         cdef CK_RV rv
 
@@ -1183,13 +1186,14 @@ class Pkcs11Connection:
             raise Pkcs11Exception(f"C_Login: {hex(rv)}")
 
     def gen_key_pair(self,
+                     slotNo,
                      pin,
                      keyPairID,
                      keyType,
                      parametersR3410_2012_256,
                      parametersR3411_2012_256,
                      template,
-                     slotNo): #, pkTemplate
+                     ): #, pkTemplate
 
         attribTypes = {
             0: 0x00000000,
@@ -1206,7 +1210,7 @@ class Pkcs11Connection:
         cdef CK_RV rv
         cdef CK_FUNCTION_LIST_PTR functionListI = <CK_FUNCTION_LIST_PTR> <uintptr_t> self.functionListUIP
         cdef CK_SLOT_ID slotID = self.slots[slotNo]["si"]
-        cdef CK_SESSION_HANDLE session = <CK_SESSION_HANDLE> <uintptr_t> self.sessionUIP
+        cdef CK_SESSION_HANDLE session = <CK_SESSION_HANDLE> <uintptr_t> self.slots[slotNo]["sessionUIP"]
 
         #soPin = bytearray(str(pin),'utf-8')
 
@@ -1383,7 +1387,7 @@ class Pkcs11Connection:
         cdef CK_OBJECT_HANDLE hSecKey = <CK_OBJECT_HANDLE> cython.NULL
         cdef CK_FUNCTION_LIST_PTR functionListI = <CK_FUNCTION_LIST_PTR> <uintptr_t> self.functionListUIP
         cdef CK_SLOT_ID slotID = self.slots[slotNo]["si"]
-        cdef CK_SESSION_HANDLE session = <CK_SESSION_HANDLE> <uintptr_t> self.sessionUIP
+        cdef CK_SESSION_HANDLE session = <CK_SESSION_HANDLE> <uintptr_t> self.slots[slotNo]["sessionUIP"]
         cdef CK_RV rv
 
         cdef CK_ULONG array_sz = sizeof(attrGOST28147_89SecKey)
@@ -1443,7 +1447,7 @@ class Pkcs11Connection:
         cdef CK_OBJECT_HANDLE hSecKey = <CK_OBJECT_HANDLE> cython.NULL
         cdef CK_FUNCTION_LIST_PTR functionListI = <CK_FUNCTION_LIST_PTR> <uintptr_t> self.functionListUIP
         cdef CK_SLOT_ID slotID = self.slots[slotNo]["si"]
-        cdef CK_SESSION_HANDLE session = <CK_SESSION_HANDLE> <uintptr_t> self.sessionUIP
+        cdef CK_SESSION_HANDLE session = <CK_SESSION_HANDLE> <uintptr_t> self.slots[slotNo]["sessionUIP"]
         cdef CK_RV rv
 
         cdef CK_ULONG arraysize = sizeof(attrGOST28147_89SecKey)//sizeof(attrGOST28147_89SecKey[0])
@@ -1501,7 +1505,7 @@ class Pkcs11Connection:
         cdef CK_OBJECT_HANDLE hSecKey = <CK_OBJECT_HANDLE> cython.NULL
         cdef CK_FUNCTION_LIST_PTR functionListI = <CK_FUNCTION_LIST_PTR> <uintptr_t> self.functionListUIP
         cdef CK_SLOT_ID slotID = self.slots[slotNo]["si"]
-        cdef CK_SESSION_HANDLE session = <CK_SESSION_HANDLE> <uintptr_t> self.sessionUIP
+        cdef CK_SESSION_HANDLE session = <CK_SESSION_HANDLE> <uintptr_t> self.slots[slotNo]["sessionUIP"]
         cdef CK_RV rv
 
         cdef CK_ULONG array_sz = sizeof(attrGOST28147_89SecKey)
@@ -1523,7 +1527,7 @@ class Pkcs11Connection:
             raise Pkcs11Exception(f"C_GenerateKey: {hex(rv)} : {rv2str[rv]}")
 
         print("28147 key generated sucessfully\n")
-    def findKuznechikSecretKey(self, secKeyIdStr):
+    def findKuznechikSecretKey(self, slotNo, secKeyIdStr):
         ####################### prepare key search structure ################################
         cdef CK_OBJECT_CLASS ocSecKey = cko2UL['CKO_SECRET_KEY']
         #secKeyID = b"Kuznechik Secret Key Id"
@@ -1542,7 +1546,7 @@ class Pkcs11Connection:
         #######################################################################
         cdef CK_FUNCTION_LIST_PTR functionListI = <CK_FUNCTION_LIST_PTR> <uintptr_t> self.functionListUIP
         cdef CK_FUNCTION_LIST_EXTENDED_PTR functionListExI = <CK_FUNCTION_LIST_EXTENDED_PTR><uintptr_t> self.functionListExUIP
-        cdef CK_SESSION_HANDLE session = <CK_SESSION_HANDLE> <uintptr_t> self.sessionUIP
+        cdef CK_SESSION_HANDLE session = <CK_SESSION_HANDLE> <uintptr_t> self.slots[slotNo]["sessionUIP"]
         #######################################################################
         cdef CK_OBJECT_HANDLE_PTR encKeys = cython.NULL
         cdef CK_ULONG encKeysCount = 0
@@ -1592,9 +1596,9 @@ class Pkcs11Connection:
 
         return encKeysCount, <uintptr_t>encKeys
 
-    def encryptKuznechik(self, encKeysCnt: int, encKeysUIP: int, plainTextStr: str):
+    def encryptKuznechik(self, slotNo, encKeysCnt: int, encKeysUIP: int, plainTextStr: str):
         cdef CK_FUNCTION_LIST_PTR functionListI = <CK_FUNCTION_LIST_PTR> <uintptr_t> self.functionListUIP
-        cdef CK_SESSION_HANDLE session = <CK_SESSION_HANDLE> <uintptr_t> self.sessionUIP
+        cdef CK_SESSION_HANDLE session = <CK_SESSION_HANDLE> <uintptr_t> self.slots[slotNo]["sessionUIP"]
         cdef CK_MECHANISM kuznechikEncDecEcbMech = CK_MECHANISM(str2mech['CKM_KUZNECHIK_ECB'], cython.NULL, 0)
 
         cdef CK_OBJECT_HANDLE_PTR encKeys = <CK_OBJECT_HANDLE_PTR> <uintptr_t> encKeysUIP
@@ -1629,9 +1633,9 @@ class Pkcs11Connection:
 
         return encryptedSize, <uintptr_t>encrypted, encryptedBytes
 
-    def decryptKuznechik(self, encKeysCnt: int, encKeysUIP: int, cryptoTextBytes: bytes):
+    def decryptKuznechik(self, slotNo, encKeysCnt: int, encKeysUIP: int, cryptoTextBytes: bytes):
         cdef CK_FUNCTION_LIST_PTR functionListI = <CK_FUNCTION_LIST_PTR> <uintptr_t> self.functionListUIP
-        cdef CK_SESSION_HANDLE session = <CK_SESSION_HANDLE> <uintptr_t> self.sessionUIP
+        cdef CK_SESSION_HANDLE session = <CK_SESSION_HANDLE> <uintptr_t> self.slots[slotNo]["sessionUIP"]
         cdef CK_MECHANISM kuznechikEncDecEcbMech = CK_MECHANISM(str2mech['CKM_KUZNECHIK_ECB'], cython.NULL, 0)
 
         cdef CK_OBJECT_HANDLE_PTR encKeys = <CK_OBJECT_HANDLE_PTR> <uintptr_t> encKeysUIP

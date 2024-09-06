@@ -1,22 +1,11 @@
 #!/usr/bin/python3.11
 
-#import pyximport
-
-#pyximport.install()
 from PyPkcs11 import dumpBuf
 
-from PyPkcs11 import CKA_CLASS
-from PyPkcs11 import CKA_ID
-from PyPkcs11 import CKA_KEY_TYPE
-from PyPkcs11 import CKA_TOKEN
-from PyPkcs11 import CKA_PRIVATE
-from PyPkcs11 import CKA_GOSTR3410_PARAMS
-from PyPkcs11 import CKA_GOSTR3411_PARAMS
-
 from PyPkcs11 import Pkcs11Connection
+from uuid import uuid4
 
 conn = Pkcs11Connection("/opt/aktivco/rutokenecp/x86_64/librtpkcs11ecp.so")
-#conn = Pkcs11Connection("/home/vleo/SBT/SBERCA/HSM/RUTOKEN/rutoken-sdk-latest_zip/sdk/pkcs11/lib/linux_glibc-x86_64/librtpkcs11ecp.so")
 
 conn.fill_slots_list()
 
@@ -25,103 +14,57 @@ print("Slots list:\n", "\n".join([str(v) for v in conn.slots]))
 if len(conn.slots) == 0:
     quit(1)
 
-conn.fill_mechanism_list()
-
+#conn.fill_mechanism_list()
 #print("Slots list:\n", "\n".join([str(v) for v in conn.slots]))
-
-#conn.format_token("87654321", "12345678", "myVlRutoken")
+#conn.format_token(0, "87654321", "12345678", "myVlRutoken")
 
 if len(conn.slots) == 0:
     quit(2)
 
-conn.open_session(0)
+conn.open_sessions()
 
-conn.login("12345678")
-#conn.login("87654321")
+conn.login(0, "12345678")
 
-##conn.gen_key_symm()
+if False:
+    u4 = uuid4()
+    conn.gen_key_symm_kuznechik(0, str(u4))
+    encKeysCnt, encKeysUIP = conn.findKuznechikSecretKey(0, str(u4))
+else:
+    u4str = '3d1eb7dd-e4d7-4d5b-9c3e-fc6d6b1e6c68'
 
-#conn.gen_key_symm_kuznechik(0, "rootcavc_01")
-
-##conn.upload_key_symm()
-
-encKeysCnt, encKeysUIP = conn.findKuznechikSecretKey("rootcavc_01")
+encKeysCnt, encKeysUIP = conn.findKuznechikSecretKey(0, u4str)
 
 print(f"encKeysCnt = {encKeysCnt:d} encKeysPtr = {encKeysUIP:d}")
 
-#plainTextStr = "Quick Brown Fox Jumps over the Lazy Dog 0123456789 Times!"
-plainTextStr = "0123456789ABCDEF0123456789ABCDEf"
+if False:
+    plainTextStr = "OivEd+grojdyxEm0"
 
-encryptedSize, encrypted, encryptedBytes = conn.encryptKuznechik(encKeysCnt, encKeysUIP, plainTextStr)
-print(f"encryptedSize = {encryptedSize:d} encrypted = {encrypted:d} encryptedBytes hex = {encryptedBytes.hex(' ')}")
+    encryptedSize, encrypted, encryptedBytes = conn.encryptKuznechik(0, encKeysCnt, encKeysUIP, plainTextStr)
+    print(f"encryptedSize = {encryptedSize:d} encrypted = {encrypted:d} encryptedBytes hex = {encryptedBytes.hex(' ')}")
+    #dumpBuf(encrypted, encryptedSize)
 
-#dumpBuf(encrypted, encryptedSize)
+    with open("valutkey.crypto.bin", "wb") as f:
+        f.write(encryptedBytes)
 
-plainTextSize, decrypted, decryptedStr = conn.decryptKuznechik(encKeysCnt, encKeysUIP, encryptedBytes)
+with open("valutkey.crypto.bin", "rb") as f:
+    encryptedBytesRead = f.read(16)
+
+plainTextSize, decrypted, decryptedStr = conn.decryptKuznechik(0, encKeysCnt, encKeysUIP, encryptedBytesRead)
 print(f"plainTextSize = {plainTextSize:d} decrypted = {decrypted:d} decryptedStr = {decryptedStr:s}")
 
-conn.free_pkcs11()
+from subprocess import run, Popen
+from os import environ
 
-quit()
 
-keyPairID = "GOST R 34.10-2012 (256 bits) sample key pair ID (Aktiv Co.)"
-keyTypes = {
-    "CKK_GOSTR3410": 0x00000030,
-    "CKK_GOSTR3411": 0x00000031,
-    "CKK_GOST28147": 0x00000032
-}
-ckoTypes = {
-    "CKO_DATA ": 0x00000000,
-    "CKO_CERTIFICATE": 0x00000001,
-    "CKO_PUBLIC_KEY": 0x00000002,
-    "CKO_PRIVATE_KEY": 0x00000003,
-    "CKO_SECRET_KEY": 0x00000004,
-    "CKO_HW_FEATURE": 0x00000005,
-    "CKO_DOMAIN_PARAMETERS": 0x00000006,
-    "CKO_MECHANISM": 0x00000007,
-    "CKO_OTP_KEY": 0x00000008,
-    "CKO_VENDOR_DEFINED": 0x80000000
-}
+osslRun = run(['openssl',
+               'aes-256-cbc',
+               '-d',
+               '-a',
+               '-salt',
+               '-pbkdf2',
+               '-pass',
+               'env:OSSLVAULTPASS',
+               '-in',
+               'passwords.yaml.vault'])
 
-parametersR3410_2012_256 = [0x06, 0x07, 0x2a, 0x85, 0x03, 0x02, 0x02, 0x23, 0x01]
-parametersR3411_2012_256 = [0x06, 0x08, 0x2a, 0x85, 0x03, 0x07, 0x01, 0x01, 0x02, 0x02]
-attributes = [["CKA_CLASS", 0x00000002],
-              ["CKA_ID", "GOST R 34.10-2012 (256 bits) sample key pair ID (Aktiv Co.)"],
-              ["CKA_KEY_TYPE", keyTypes["CKK_GOSTR3410"]],
-              ["CKA_TOKEN", True],
-              ["CKA_PRIVATE", False, True],
-              ["CKA_GOSTR3410_PARAMS", "0x06, 0x07, 0x2a, 0x85, 0x03, 0x02, 0x02, 0x23, 0x01"],
-              ["CKA_GOSTR3411_PARAMS", "0x06, 0x08, 0x2a, 0x85, 0x03, 0x07, 0x01, 0x01, 0x02, 0x02"]]
-
-template = [CKA_CLASS(ckoTypes["CKO_PUBLIC_KEY"]),
-            CKA_ID("GOST R 34.10-2012 (256 bits) sample key pair ID (Aktiv Co.)"),
-            CKA_KEY_TYPE(keyTypes["CKK_GOSTR3410"]),
-            CKA_TOKEN(True),
-            CKA_PRIVATE(False),
-            CKA_GOSTR3410_PARAMS("0x06 0x07 0x2a 0x85 0x03 0x02 0x02 0x23 0x01"),
-            CKA_GOSTR3411_PARAMS("0x06 0x08 0x2a 0x85 0x03 0x07 0x01 0x01 0x02 0x02")
-            ]
-
-ca = CK_ATTRIB()
-breakpoint()
-print(template[0].ret(ca.retPtr()))
-print(ca.retData())
-
-if len(conn.slots) == 0:
-    print("Токена нет")
-
-else:
-    pin = 12345678
-    rv4 = conn.gen_key_pair(pin,
-                            keyPairID,
-                            keyTypes["CKK_GOSTR3410"],
-                            parametersR3410_2012_256,
-                            parametersR3411_2012_256,
-                            template)
-
-# rvs2 = PyPkcs11.format_token(slotsList,functionListExUIP)
-# pin = 12345678
-# rvs3 = PyPkcs11.mechanism_list(slotsList,functionListUIP)
-# for m in rvs3:
-#     print(m)
 conn.free_pkcs11()
