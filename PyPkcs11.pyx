@@ -961,23 +961,24 @@ class Pkcs11Connection:
 ########################### INIT #####################################
     def __init__(self, path):
 
-        print("Entering init_pkcs11")
+        print("Entering init_pkcs11..")
 
         bpath = bytearray(path, 'utf-8')
         cdef void * module = dlopen(bpath, RTLD_NOW)
-        print("Path=", path, " Module=", <uintptr_t>module)
+        print(f"Pkcs11 so lib path= {path}")
+        print(f"Loaded so lib addr= 0x{<uintptr_t>module:016x}")
         if <uintptr_t>module == 0:
           raise Pkcs11Exception(f"Error loading token pkcs11 dynamic librarry, dlerror= {dlerror()}")
 
         C_GetFunctionList_ba = bytearray("C_GetFunctionList",'utf-8')
         cdef CK_C_GetFunctionList getFunctionList
         getFunctionList = <CK_C_GetFunctionList> dlsym(module, C_GetFunctionList_ba)
-        print("getFunctionList= ", <uintptr_t>getFunctionList)
+        print(f"getFunctionList= 0x{<uintptr_t>getFunctionList:016x}")
 
         C_EX_GetFunctionListExtended_ba = bytearray("C_EX_GetFunctionListExtended",'utf-8')
         cdef CK_C_EX_GetFunctionListExtended getFunctionListEx
         getFunctionListEx = <CK_C_EX_GetFunctionListExtended> dlsym(module, C_EX_GetFunctionListExtended_ba)
-        print("getFunctionListEx= ", <uintptr_t>getFunctionListEx)
+        print(f"getFunctionListEx= 0x{<uintptr_t>getFunctionListEx:016x}")
 
         cdef CK_FUNCTION_LIST_PTR functionListI
         cdef CK_FUNCTION_LIST_EXTENDED_PTR functionListExI
@@ -1005,6 +1006,8 @@ class Pkcs11Connection:
         if rv != 0:
             raise Pkcs11Exception(f"C_Initialize: {hex(rv)}:{rv2str[rv]}")
 
+        print("C_Initialize: OK")
+
         self.functionListUIP = <uintptr_t> functionListI
         self.functionListExUIP = <uintptr_t> functionListExI
         self.slots = []
@@ -1020,7 +1023,7 @@ class Pkcs11Connection:
         if rv != 0:
             raise Pkcs11Exception(f"C_Finalize: {hex(rv)}:{rv2str[rv]}")
 
-        print("free_pkcs11: Finish")
+        print("C_Finalize: OK")
 
 ########################### LIST SLOTS #####################################
     def fill_slots_list(self):
@@ -1074,14 +1077,14 @@ class Pkcs11Connection:
 
             rv = functionListI.C_GetMechanismList(slotID, cython.NULL, &mechanismCount)
             if rv != 0:
-                raise Pkcs11Exception(f"C_GetMechanismList: {hex(rv)}")
+                raise Pkcs11Exception(f"C_GetMechanismList: {hex(rv)} : {rv2str[rv]}")
 
             # MALLOC
             mechanisms = <CK_MECHANISM_TYPE_PTR>malloc(mechanismCount * sizeof(CK_MECHANISM_TYPE))
 
             rv = functionListI.C_GetMechanismList(slotID, mechanisms, &mechanismCount)
             if rv != 0:
-                raise Pkcs11Exception(f"C_GetMechanismList: {hex(rv)}")
+                raise Pkcs11Exception(f"C_GetMechanismList: {hex(rv)} : {rv2str[rv]}")
 
 
             self.slots[slotID]["mc"] = 0
@@ -1092,7 +1095,7 @@ class Pkcs11Connection:
 
                 rv = functionListI.C_GetMechanismInfo(slotID, mechanisms[i] , &mechInfo)
                 if rv != 0:
-                    raise Pkcs11Exception(f"C_GetMechanismInfo(mechanism {i}): {hex(rv)}")
+                    raise Pkcs11Exception(f"C_GetMechanismInfo(mechanism {i}): {hex(rv)} : {rv2str[rv]}")
 
                 #print(f" {i}: mechanisms: {mech2string[mechanisms[i]]}, keySize= ({mechInfo.ulMinKeySize},{mechInfo.ulMaxKeySize}), mechInfo= {mechInfo.flags}", end=" ")
 
@@ -1127,10 +1130,11 @@ class Pkcs11Connection:
         soPinBa = bytearray(soPin,'utf-8')
         pinBa = bytearray(pin,'utf-8')
         labelBa = bytearray(label,'utf-8')
+        #print(soPinBa, pinBa, labelBa)
 
         cdef CK_RUTOKEN_INIT_PARAM initParam
 
-        cdef CK_RV rv1
+        cdef CK_RV rv
         errorCode = 1
 
 
@@ -1142,8 +1146,9 @@ class Pkcs11Connection:
         initParam.ulNewUserPinLen = len(pinBa)
         initParam.ulMinAdminPinLen = 6
         initParam.ulMinUserPinLen = 6
-        initParam.ChangeUserPINPolicy = str2tokenFlag['TOKEN_FLAGS_ADMIN_CHANGE_USER_PIN']
-        # | str2tokenFlag['TOKEN_FLAGS_USER_CHANGE_USER_PIN']
+        initParam.ChangeUserPINPolicy = str2tokenFlag['TOKEN_FLAGS_USER_CHANGE_USER_PIN']
+        # str2tokenFlag)['TOKEN_FLAGS_ADMIN_CHANGE_USER_PIN']
+        # str2tokenFlag['TOKEN_FLAGS_USER_CHANGE_USER_PIN']
         initParam.ulMaxAdminRetryCount = 10
         initParam.ulMaxUserRetryCount = 10
         initParam.pTokenLabel = labelBa
@@ -1151,9 +1156,9 @@ class Pkcs11Connection:
         initParam.ulSmMode = 0
 
 
-        rv1 = functionListExI.C_EX_InitToken(slot, soPinBa, len(soPinBa), &initParam)
-        if rv1 != 0:
-            raise Pkcs11Exception(f"C_EX_InitToken: {hex(rv1)}")
+        rv = functionListExI.C_EX_InitToken(slot, soPinBa, len(soPinBa), &initParam)
+        if rv != 0:
+            raise Pkcs11Exception(f"C_EX_InitToken: {hex(rv)} : {rv2str[rv]}")
 
         printf("Token has been formatted successfully.\n")
 
@@ -1169,7 +1174,7 @@ class Pkcs11Connection:
 
             rv = functionListI.C_OpenSession(slotID, str2sessonFlag['CKF_SERIAL_SESSION'] | str2sessonFlag['CKF_RW_SESSION'], cython.NULL, cython.NULL, &session)
             if rv != 0:
-                raise Pkcs11Exception(f"C_OpenSession: {hex(rv)}")
+                raise Pkcs11Exception(f"C_OpenSession: {hex(rv)} : {rv2str[rv]}")
 
             self.slots[ix]["sessionUIP"] = <uintptr_t> session
             ix += 1
@@ -1183,7 +1188,7 @@ class Pkcs11Connection:
 
         rv = functionListI.C_Login(session, 1, soPinBa, len(soPinBa))
         if rv != 0:
-            raise Pkcs11Exception(f"C_Login: {hex(rv)}")
+            raise Pkcs11Exception(f"C_Login: {hex(rv)} : {rv2str[rv]}")
 
     def gen_key_pair(self,
                      slotNo,
@@ -1344,7 +1349,7 @@ class Pkcs11Connection:
         print(f"privateKey= {privateKey}")
 
         if rv != 0:
-            raise Pkcs11Exception(f"C_GenerateKeyPair: {rv2str[rv]}")
+            raise Pkcs11Exception(f"C_GenerateKeyPair: {rv2str[rv]} : {rv2str[rv]}")
 
         print("Gost key pair generated sucessfully\n")
         return 0
@@ -1458,7 +1463,6 @@ class Pkcs11Connection:
             printf("0x%08x ", attrGOST28147_89SecKey[i].type)
             dumpBuf(<uintptr_t> attrGOST28147_89SecKey[i].pValue, attrGOST28147_89SecKey[i].ulValueLen)
 
-        #rv = functionListI.C_GenerateKey(session,
         rv = functionListI.C_CreateObject(session,
                                          #&keyGenMech,
                                          attrGOST28147_89SecKey,
@@ -1466,7 +1470,6 @@ class Pkcs11Connection:
                                          &hSecKey
                                          )
         if rv != 0:
-            #raise Pkcs11Exception(f"C_GenerateKey: {hex(rv)} : {rv2str[rv]}")
             raise Pkcs11Exception(f"C_CreateObject: {hex(rv)} : {rv2str[rv]}")
 
         print("28147 key generated sucessfully\n")
@@ -1475,8 +1478,9 @@ class Pkcs11Connection:
         ####################### prepare key parameters structure ################################
         cdef CK_OBJECT_CLASS ocSecKey = cko2UL['CKO_SECRET_KEY']
 
-        SecKeyLabel = b"Kuznechik Secret Key Lbl"
-        cdef CK_UTF8CHAR * SecKeyLabel_uchar_ptr = bytesToCharPtr(SecKeyLabel)
+        #secKeyLabel = b"Kuznechik Secret Key Lbl"
+        secKeyLabel = bytes(secKeyIdStr + " LBL", "utf-8")
+        cdef CK_UTF8CHAR * SecKeyLabel_uchar_ptr = bytesToCharPtr(secKeyLabel)
 
         #secKeyID = b"Kuznechik Secret Key Id"
         secKeyID = bytes(secKeyIdStr, "utf-8")
@@ -1491,7 +1495,7 @@ class Pkcs11Connection:
 
         cdef CK_ATTRIBUTE[8] attrGOST28147_89SecKey = [
             CK_ATTRIBUTE(ckaS2UL['CKA_CLASS'], &ocSecKey, sizeof(ocSecKey)),
-            CK_ATTRIBUTE(ckaS2UL['CKA_LABEL'], SecKeyLabel_uchar_ptr, len(SecKeyLabel)),
+            CK_ATTRIBUTE(ckaS2UL['CKA_LABEL'], SecKeyLabel_uchar_ptr, len(secKeyLabel)),
             CK_ATTRIBUTE(ckaS2UL['CKA_ID'], SecKeyID_uchar_ptr, len(secKeyID)),
             CK_ATTRIBUTE(ckaS2UL['CKA_KEY_TYPE'], &KeyType, sizeof(KeyType)),
             CK_ATTRIBUTE(ckaS2UL['CKA_ENCRYPT'], &bTrue, sizeof(bTrue)),
@@ -1512,10 +1516,10 @@ class Pkcs11Connection:
         cdef CK_ULONG elem_sz = sizeof(attrGOST28147_89SecKey[0])
         cdef CK_ULONG elem_num = array_sz // elem_sz
 
-        printf("sizeof secretKeyAttribs: %d %d %d\n", array_sz, elem_sz, elem_num)
+        #printf("sizeof secretKeyAttribs: %d %d %d\n", array_sz, elem_sz, elem_num)
 
-        dumpBuf(<uintptr_t>&keyGenMech,sizeof(keyGenMech))
-        dumpBuf(<uintptr_t>attrGOST28147_89SecKey, 216)
+        #dumpBuf(<uintptr_t>&keyGenMech,sizeof(keyGenMech))
+        #dumpBuf(<uintptr_t>attrGOST28147_89SecKey, 216)
 
         rv = functionListI.C_GenerateKey(session,
                                          &keyGenMech,
@@ -1645,7 +1649,7 @@ class Pkcs11Connection:
 
         cdef CK_RV rv
 
-        print(f"encKeysCnt = {encKeysCnt:d} encKeysUIP = {encKeysUIP:d}")
+        #print(f"encKeysCnt = {encKeysCnt:d} encKeysUIP = {encKeysUIP:d}")
         rv = functionListI.C_DecryptInit(session,
                                          &kuznechikEncDecEcbMech,
                                          encKeys[0],
