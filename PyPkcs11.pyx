@@ -927,7 +927,7 @@ def dumpBuf(uintBufPtr: int, bufSz: int):
 cdef CK_BYTE_PTR bytesToCharPtr(bytes bts):
     bts_len = len(bts)
     bts_sz = bts_len * sizeof(CK_BYTE)
-    print(f"bts_sz = {bts_sz:d}")
+    #print(f"bts_sz = {bts_sz:d}")
     cdef CK_BYTE_PTR bts_uchar_ptr = <CK_BYTE_PTR> malloc(bts_sz + 1)
     memcpy(bts_uchar_ptr, PyBytes_AsString(bts), bts_len )
     bts_uchar_ptr[bts_sz] = 0
@@ -961,24 +961,24 @@ class Pkcs11Connection:
 ########################### INIT #####################################
     def __init__(self, path):
 
-        print("Entering init_pkcs11..")
+        #print("Entering init_pkcs11..")
 
         bpath = bytearray(path, 'utf-8')
         cdef void * module = dlopen(bpath, RTLD_NOW)
-        print(f"Pkcs11 so lib path= {path}")
-        print(f"Loaded so lib addr= 0x{<uintptr_t>module:016x}")
+        #print(f"Pkcs11 so lib path= {path}")
+        #print(f"Loaded so lib addr= 0x{<uintptr_t>module:016x}")
         if <uintptr_t>module == 0:
           raise Pkcs11Exception(f"Error loading token pkcs11 dynamic librarry, dlerror= {dlerror()}")
 
         C_GetFunctionList_ba = bytearray("C_GetFunctionList",'utf-8')
         cdef CK_C_GetFunctionList getFunctionList
         getFunctionList = <CK_C_GetFunctionList> dlsym(module, C_GetFunctionList_ba)
-        print(f"getFunctionList= 0x{<uintptr_t>getFunctionList:016x}")
+        #print(f"getFunctionList= 0x{<uintptr_t>getFunctionList:016x}")
 
         C_EX_GetFunctionListExtended_ba = bytearray("C_EX_GetFunctionListExtended",'utf-8')
         cdef CK_C_EX_GetFunctionListExtended getFunctionListEx
         getFunctionListEx = <CK_C_EX_GetFunctionListExtended> dlsym(module, C_EX_GetFunctionListExtended_ba)
-        print(f"getFunctionListEx= 0x{<uintptr_t>getFunctionListEx:016x}")
+        #print(f"getFunctionListEx= 0x{<uintptr_t>getFunctionListEx:016x}")
 
         cdef CK_FUNCTION_LIST_PTR functionListI
         cdef CK_FUNCTION_LIST_EXTENDED_PTR functionListExI
@@ -1006,7 +1006,7 @@ class Pkcs11Connection:
         if rv != 0:
             raise Pkcs11Exception(f"C_Initialize: {hex(rv)}:{rv2str[rv]}")
 
-        print("C_Initialize: OK")
+        #print("C_Initialize: OK")
 
         self.functionListUIP = <uintptr_t> functionListI
         self.functionListExUIP = <uintptr_t> functionListExI
@@ -1569,7 +1569,7 @@ class Pkcs11Connection:
 
         bufferSize = 8
         while True:
-            print(f"realloc(..,{bufferSize:d})")
+            #print(f"realloc(..,{bufferSize:d})")
             buffer = <CK_OBJECT_HANDLE_PTR> realloc(<CK_OBJECT_HANDLE_PTR>encKeys, bufferSize * sizeof(CK_OBJECT_HANDLE) )
             if buffer == cython.NULL:
                 raise Pkcs11Exception(f"realloc (find objects): buffer ptr value returned cython.NULL")
@@ -1586,12 +1586,12 @@ class Pkcs11Connection:
                 break
 
         if encKeysCount > 0:
-            print(f"final realloc(..,{encKeysCount:d})")
+            #print(f"final realloc(..,{encKeysCount:d})")
             buffer = <CK_OBJECT_HANDLE_PTR> realloc(encKeys, encKeysCount * sizeof(CK_OBJECT_HANDLE))
             if buffer == cython.NULL:
                 raise Pkcs11Exception(f"realloc (find realloc): buffer ptr value returned cython.NULL")
 
-        print(f"Found {encKeysCount} kuznechik keys with ID == {secKeyID.decode()}")
+        #print(f"Found {encKeysCount} kuznechik keys with ID == {secKeyID.decode()}")
         #dumpBuf(<uintptr_t>encKeys,8)
 
         rv = functionListI.C_FindObjectsFinal(session)
@@ -1661,7 +1661,7 @@ class Pkcs11Connection:
         cdef CK_ULONG cryptoTextSize = len(cryptoTextBytes)
         cdef CK_ULONG plainTextSize = cryptoTextSize
         cdef CK_BYTE_PTR decrypted = <CK_BYTE_PTR>malloc(cryptoTextSize * sizeof(CK_BYTE))
-        printf("cryptoTextSize = %d \n", cryptoTextSize)
+        #printf("cryptoTextSize = %d \n", cryptoTextSize)
         rv = functionListI.C_Decrypt(session,
                                      cryptoText,
                                      cryptoTextSize,
