@@ -1,19 +1,35 @@
 import cython
 cimport cython
 
+import ctypes
 
 from libc.stdlib cimport malloc
 from libc.stdlib cimport realloc
 from libc.stdlib cimport free
 from libc.string cimport memcpy
+from libc.string cimport strstr
 from libc.stdio cimport printf
 
 from cpython.bytes cimport PyBytes_AsString
+
+from cpython.bytes cimport PyBytes_FromStringAndSize
+from cpython cimport PyObject
 
 import re
 
 class Pkcs11Exception(Exception):
     pass
+
+cdef extern from "regex.h":
+    ctypedef long int regoff_t
+    struct regex_t:
+        size_t    re_nsub;
+    struct regmatch_t:
+        regoff_t  rm_so
+        regoff_t  rm_eo
+
+    int regcomp(regex_t *preg, const char *regex, int cflags)
+    int regexec(const regex_t *preg, const char *string, size_t nmatch, regmatch_t pmatch[], int eflags )
 
 
 cdef extern from "stdint.h":
@@ -911,7 +927,7 @@ cdef CK_ULONG GOST_28147_KEY_SIZE = 32
 
 def dumpBuf(uintBufPtr: int, bufSz: int):
 
-    printf("dump buf sz=%d\n",<uintptr_t> bufSz)
+    printf("dump buf sz=%ld\n",<uintptr_t> bufSz)
 
     cdef unsigned char * buf = <unsigned char *> <uintptr_t> uintBufPtr;
     nlf = None
@@ -1058,9 +1074,57 @@ class Pkcs11Connection:
         if rv != 0:
             raise Pkcs11Exception(f"C_GetSlotList: {hex(rv)}:{rv2str[rv]}")
 
-        self.slots = [{"si":slotsI[i]} for i in range(slotCount)]
+        self.slots = [{"six":slotsI[i]} for i in range(slotCount)]
+        self.slots = [{"six":slotsI[i], "si":self.get_slot_info(i), "ti":self.get_token_info(i)} for i in range(slotCount)]
 
         free(slotsI)
+
+    def fixedCBufToStr(self, bts):
+        descrStr = re.sub(' *$', '', bytes(bts).decode())
+        return descrStr
+    def get_slot_info(self, slotNo):
+        cdef CK_FUNCTION_LIST_PTR functionListI = <CK_FUNCTION_LIST_PTR><uintptr_t> self.functionListUIP
+        cdef CK_SLOT_ID slotID = self.slots[slotNo]["six"]
+        cdef CK_SLOT_INFO slotInfo
+
+        rv = functionListI.C_GetSlotInfo(slotID, &slotInfo)
+        if rv != 0:
+            raise Pkcs11Exception(f"C_GetSlotInfo: {hex(rv)}:{rv2str[rv]}")
+
+        descrStr = self.fixedCBufToStr(slotInfo.slotDescription[:64])
+        mfrStr = self.fixedCBufToStr(slotInfo.manufacturerID[:32])
+
+        #slotInfo.slotDescription[63]=0
+        #strstr(<char *>slotInfo.slotDescription,"  ")[0] = 0
+
+        slotInfoDict = dict(slotInfo)
+        slotInfoDict["slotDescription"] = descrStr
+        slotInfoDict["manufacturerID"] = mfrStr
+
+
+        return slotInfoDict
+
+    def get_token_info(self, slotNo):
+        cdef CK_FUNCTION_LIST_PTR functionListI = <CK_FUNCTION_LIST_PTR> <uintptr_t> self.functionListUIP
+        cdef CK_SLOT_ID slotID = self.slots[slotNo]["six"]
+        cdef CK_TOKEN_INFO tokenInfo
+
+        rv = functionListI.C_GetTokenInfo(slotID, &tokenInfo)
+        if rv != 0:
+            raise Pkcs11Exception(f"C_GetTokenInfo: {hex(rv)}:{rv2str[rv]}")
+
+        lblStr = self.fixedCBufToStr(tokenInfo.label[:32])
+        mfrStr = self.fixedCBufToStr(tokenInfo.manufacturerID[:32])
+        modelStr = self.fixedCBufToStr(tokenInfo.model[:16])
+        serialStr = self.fixedCBufToStr(tokenInfo.serialNumber[:16])
+
+        tokenInfoDict = dict(tokenInfo)
+        tokenInfoDict["label"] = lblStr
+        tokenInfoDict["manufacturerID"] = mfrStr
+        tokenInfoDict["model"] = modelStr
+        tokenInfoDict["serialNumber"] = serialStr
+
+        return tokenInfoDict
 
 ########################### LIST MECH #####################################
     def fill_mechanism_list(self):
@@ -1073,7 +1137,7 @@ class Pkcs11Connection:
         cdef CK_SLOT_ID slotID
 
         for se in self.slots:
-            slotID = se["si"]
+            slotID = se["six"]
 
             rv = functionListI.C_GetMechanismList(slotID, cython.NULL, &mechanismCount)
             if rv != 0:
@@ -1122,7 +1186,7 @@ class Pkcs11Connection:
     def format_token(self, slotNo, soPin, pin, label):
 
         cdef CK_FUNCTION_LIST_EXTENDED_PTR functionListExI = <CK_FUNCTION_LIST_EXTENDED_PTR><uintptr_t> self.functionListExUIP
-        cdef CK_SLOT_ID slot = self.slots[slotNo]["si"]
+        cdef CK_SLOT_ID slot = self.slots[slotNo]["six"]
 
 
         #print("---" + int(slot))/home/reversin/pPro/cYthon
@@ -1170,7 +1234,7 @@ class Pkcs11Connection:
         cdef CK_FUNCTION_LIST_PTR functionListI = <CK_FUNCTION_LIST_PTR> <uintptr_t> self.functionListUIP
         ix = 0
         for se in self.slots:
-            slotID = se["si"]
+            slotID = se["six"]
 
             rv = functionListI.C_OpenSession(slotID, str2sessonFlag['CKF_SERIAL_SESSION'] | str2sessonFlag['CKF_RW_SESSION'], cython.NULL, cython.NULL, &session)
             if rv != 0:
@@ -1214,7 +1278,7 @@ class Pkcs11Connection:
 
         cdef CK_RV rv
         cdef CK_FUNCTION_LIST_PTR functionListI = <CK_FUNCTION_LIST_PTR> <uintptr_t> self.functionListUIP
-        cdef CK_SLOT_ID slotID = self.slots[slotNo]["si"]
+        cdef CK_SLOT_ID slotID = self.slots[slotNo]["six"]
         cdef CK_SESSION_HANDLE session = <CK_SESSION_HANDLE> <uintptr_t> self.slots[slotNo]["sessionUIP"]
 
         #soPin = bytearray(str(pin),'utf-8')
@@ -1391,7 +1455,7 @@ class Pkcs11Connection:
         cdef CK_MECHANISM keyGenMech = CK_MECHANISM(str2mech['CKM_GOST28147_KEY_GEN'], cython.NULL, 0)
         cdef CK_OBJECT_HANDLE hSecKey = <CK_OBJECT_HANDLE> cython.NULL
         cdef CK_FUNCTION_LIST_PTR functionListI = <CK_FUNCTION_LIST_PTR> <uintptr_t> self.functionListUIP
-        cdef CK_SLOT_ID slotID = self.slots[slotNo]["si"]
+        cdef CK_SLOT_ID slotID = self.slots[slotNo]["six"]
         cdef CK_SESSION_HANDLE session = <CK_SESSION_HANDLE> <uintptr_t> self.slots[slotNo]["sessionUIP"]
         cdef CK_RV rv
 
@@ -1399,7 +1463,7 @@ class Pkcs11Connection:
         cdef CK_ULONG elem_sz = sizeof(attrGOST28147_89SecKey[0])
         cdef CK_ULONG elem_num = array_sz // elem_sz
 
-        printf("sizeof secretKeyAttribs: %d %d %d\n", array_sz, elem_sz, elem_num)
+        printf("sizeof secretKeyAttribs: %ld %ld %ld\n", array_sz, elem_sz, elem_num)
 
         dumpBuf(<uintptr_t>&keyGenMech,sizeof(keyGenMech))
         dumpBuf(<uintptr_t>attrGOST28147_89SecKey, 216)
@@ -1451,7 +1515,7 @@ class Pkcs11Connection:
         #######################################################################
         cdef CK_OBJECT_HANDLE hSecKey = <CK_OBJECT_HANDLE> cython.NULL
         cdef CK_FUNCTION_LIST_PTR functionListI = <CK_FUNCTION_LIST_PTR> <uintptr_t> self.functionListUIP
-        cdef CK_SLOT_ID slotID = self.slots[slotNo]["si"]
+        cdef CK_SLOT_ID slotID = self.slots[slotNo]["six"]
         cdef CK_SESSION_HANDLE session = <CK_SESSION_HANDLE> <uintptr_t> self.slots[slotNo]["sessionUIP"]
         cdef CK_RV rv
 
@@ -1460,7 +1524,7 @@ class Pkcs11Connection:
         print(f"arraysize secretKeyAttribs: ", arraysize)
 
         for i in range(arraysize):
-            printf("0x%08x ", attrGOST28147_89SecKey[i].type)
+            printf("0x%08lx ", attrGOST28147_89SecKey[i].type)
             dumpBuf(<uintptr_t> attrGOST28147_89SecKey[i].pValue, attrGOST28147_89SecKey[i].ulValueLen)
 
         rv = functionListI.C_CreateObject(session,
@@ -1479,11 +1543,11 @@ class Pkcs11Connection:
         cdef CK_OBJECT_CLASS ocSecKey = cko2UL['CKO_SECRET_KEY']
 
         #secKeyLabel = b"Kuznechik Secret Key Lbl"
-        secKeyLabel = bytes(secKeyIdStr + " LBL", "utf-8")
+        secKeyLabel = bytes(f"{secKeyIdStr}-lbl", "utf-8")
         cdef CK_UTF8CHAR * SecKeyLabel_uchar_ptr = bytesToCharPtr(secKeyLabel)
 
         #secKeyID = b"Kuznechik Secret Key Id"
-        secKeyID = bytes(secKeyIdStr, "utf-8")
+        secKeyID = bytes(f"{secKeyIdStr}", "utf-8")
         cdef CK_BYTE_PTR SecKeyID_uchar_ptr = bytesToCharPtr(secKeyID)
 
         cdef CK_KEY_TYPE KeyType = ckk2UL['CKK_KUZNECHIK']
@@ -1508,7 +1572,7 @@ class Pkcs11Connection:
         cdef CK_MECHANISM keyGenMech = CK_MECHANISM(str2mech['CKM_GOST28147_KEY_GEN'], cython.NULL, 0)
         cdef CK_OBJECT_HANDLE hSecKey = <CK_OBJECT_HANDLE> cython.NULL
         cdef CK_FUNCTION_LIST_PTR functionListI = <CK_FUNCTION_LIST_PTR> <uintptr_t> self.functionListUIP
-        cdef CK_SLOT_ID slotID = self.slots[slotNo]["si"]
+        cdef CK_SLOT_ID slotID = self.slots[slotNo]["six"]
         cdef CK_SESSION_HANDLE session = <CK_SESSION_HANDLE> <uintptr_t> self.slots[slotNo]["sessionUIP"]
         cdef CK_RV rv
 
@@ -1600,7 +1664,7 @@ class Pkcs11Connection:
 
         return encKeysCount, <uintptr_t>encKeys
 
-    def encryptKuznechik(self, slotNo, encKeysCnt: int, encKeysUIP: int, plainTextStr: str):
+    def encryptKuznechik(self, slotNo, encKeysCnt: int, encKeysUIP: int, plainTextBytes: bytes):
         cdef CK_FUNCTION_LIST_PTR functionListI = <CK_FUNCTION_LIST_PTR> <uintptr_t> self.functionListUIP
         cdef CK_SESSION_HANDLE session = <CK_SESSION_HANDLE> <uintptr_t> self.slots[slotNo]["sessionUIP"]
         cdef CK_MECHANISM kuznechikEncDecEcbMech = CK_MECHANISM(str2mech['CKM_KUZNECHIK_ECB'], cython.NULL, 0)
@@ -1619,11 +1683,12 @@ class Pkcs11Connection:
         if rv != 0:
             raise Pkcs11Exception(f"C_EncryptInit: {hex(rv)} : {rv2str[rv]}")
 
-        cdef CK_BYTE_PTR plainText = bytesToCharPtr(plainTextStr.encode("utf-8"))
-        cdef CK_ULONG plainTextSize = len(plainTextStr)
+        cdef CK_BYTE_PTR plainText = bytesToCharPtr(plainTextBytes)
+        cdef CK_ULONG plainTextSize = len(plainTextBytes)
         cdef CK_ULONG encryptedSize = plainTextSize
         cdef CK_BYTE_PTR encrypted = <CK_BYTE_PTR>malloc(encryptedSize * sizeof(CK_BYTE))
-        printf("plainTextSize = %d plainText = %s\n", plainTextSize, plainText)
+        #printf("plainTextSize = %d\n", plainTextSize)
+        #dumpBuf(<uintptr_t>plainText, plainTextSize)
         rv = functionListI.C_Encrypt(session,
                                      plainText,
                                      plainTextSize,
@@ -1673,107 +1738,4 @@ class Pkcs11Connection:
 
         decryptedBytes : bytes = decrypted[:plainTextSize]
 
-        return plainTextSize, <uintptr_t>decrypted, decryptedBytes.decode()
-
-cdef class CKA_CLASS:
-    cdef int Att
-    def __init__(self,Att):
-        self.Att = Att
-
-    def ret(self, template_atr_ptr ):
-        cdef CK_OBJECT_CLASS publicKeyObject = self.Att
-
-        cdef CK_VOID_PTR pubToVoid = &publicKeyObject
-
-        print("CKA_CLASS ret:", <uintptr_t>template_atr_ptr)
-        cdef CK_ATTRIBUTE *pkTemplate = <CK_ATTRIBUTE *><uintptr_t>template_atr_ptr
-        pkTemplate.type = ckaS2UL['CKA_CLASS']
-        pkTemplate.pValue = pubToVoid
-        pkTemplate.ulValueLen  = sizeof(publicKeyObject)
-
-        print(<uintptr_t>pkTemplate.pValue)
-        dumpBuf(<uintptr_t> pkTemplate.pValue, pkTemplate.ulValueLen)
-    def retAtt(self):
-        return self.Att
-
-
-class CKA_ID:
-    def __init__(self,attribute):
-        self.attribute = attribute
-
-    def ret(self):
-
-        kPIGost2012_256 = bytearray(str(self.attribute), 'utf-8')
-        cdef int kPIGost2012_256_len = len(kPIGost2012_256)
-        cdef int kPIGost2012_256_sz = kPIGost2012_256_len * sizeof(CK_BYTE)
-
-        cdef CK_BYTE * keyPairIdGost2012_256 = <CK_BYTE *> malloc(kPIGost2012_256_sz)
-        for i in range(kPIGost2012_256_len):
-            keyPairIdGost2012_256[i] = <CK_BYTE> kPIGost2012_256[i]
-
-        return ckaS2UL['CKA_ID'],<uintptr_t> keyPairIdGost2012_256, kPIGost2012_256_sz
-
-class CKA_KEY_TYPE:
-    def __init__(self,attribute):
-        self.attribute = attribute
-
-    def ret(self):
-        cdef CK_KEY_TYPE keyTypeGostR3410_2012_256 = self.attribute
-        cdef CK_VOID_PTR toVoidKey = &keyTypeGostR3410_2012_256
-        return ckaS2UL['CKA_KEY_TYPE'], <uintptr_t>toVoidKey, sizeof(keyTypeGostR3410_2012_256)
-
-class CKA_TOKEN:
-    def __init__(self, attribute):
-        self.attribute = attribute
-
-    def ret(self):
-        cdef CK_BBOOL attributeTrue = 1
-        cdef CK_VOID_PTR toVoidTrue = &attributeTrue
-        return ckaS2UL['CKA_TOKEN'], <uintptr_t>toVoidTrue, sizeof(attributeTrue)
-
-class CKA_PRIVATE:
-    def __init__(self, Att):
-        self.Att = Att
-
-
-    def ret(self):
-        cdef CK_BBOOL attribute = self.Att
-        cdef CK_VOID_PTR toVoid= &attribute
-
-        return ckaS2UL['CKA_PRIVATE'], <uintptr_t>toVoid, sizeof(attribute)
-
-class CKA_GOSTR3410_PARAMS:
-    def __init__(self, attribute):
-        self.attribute = attribute
-
-    def ret(self):
-
-        pgR3410_2012_256 = self.attribute.split()
-        pgR3410_2012_256_len = len(pgR3410_2012_256)
-        pgR3410_2012_256_sz = len(pgR3410_2012_256) * sizeof(CK_BYTE)
-
-        cdef CK_BYTE * parametersGostR3410_2012_256 = <CK_BYTE *> malloc(pgR3410_2012_256_sz)
-        for i in range(pgR3410_2012_256_len):
-
-            parametersGostR3410_2012_256[i] = int(pgR3410_2012_256[i],16)
-
-        return ckaS2UL['CKA_GOSTR3410_PARAMS'], <uintptr_t> parametersGostR3410_2012_256, pgR3410_2012_256_sz
-
-class CKA_GOSTR3411_PARAMS:
-    def __init__(self, attribute):
-        self.attribute = attribute
-
-    def ret(self):
-        pgR3411_2012_256 = self.attribute.split()
-        pgR3411_2012_256_len = len(pgR3411_2012_256)
-        pgR3411_2012_256_sz = len(pgR3411_2012_256) * sizeof(CK_BYTE)
-
-        cdef CK_BYTE * parametersGostR3411_2012_256 = <CK_BYTE *> malloc(pgR3411_2012_256_sz)
-        for i in range(pgR3411_2012_256_len):
-            parametersGostR3411_2012_256[i] = int(pgR3411_2012_256[i],16)
-
-        return ckaS2UL['CKA_GOSTR3411_PARAMS'], <uintptr_t> parametersGostR3411_2012_256, pgR3411_2012_256_sz
-
-class  GOST28147_TEMPLATE:
-    def __init__(self,attribute):
-        self.attribute = attribute
+        return plainTextSize, <uintptr_t>decrypted, decryptedBytes
