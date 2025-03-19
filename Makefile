@@ -1,16 +1,20 @@
 BASENAME=PyPkcs11
+SRC=pypkcs11
 
 CFLAGS='-ggdb -O0 -w'
 
 CYTHON_MODULE_LIB=$(BASENAME).cpython-*.so
 
-all: $(CYTHON_MODULE_LIB)
+wheel: LICENSE MANIFEST.in pyproject.toml README.md setup.cfg  setup.py $(SRC)/*.py $(SRC)/*.pyx
+	python3.11 -m build
 
-$(CYTHON_MODULE_LIB): pysetup.py $(BASENAME).pyx
-	CFLAGS=$(CFLAGS) BASENAME=$(BASENAME) python3.11 pysetup.py build_ext --inplace
+solib: $(CYTHON_MODULE_LIB)
+
+$(CYTHON_MODULE_LIB): setup.py $(SRC)/$(BASENAME).pyx
+	CFLAGS=$(CFLAGS) BASENAME=$(BASENAME) python3.11 setup.py build_ext --inplace
 
 test: $(CYTHON_MODULE_LIB)
 	./$(BASENAME)_test.py
 
 clean:
-	rm -rf $(CYTHON_MODULE_LIB) $(BASENAME).c build *.o
+	rm -rf $(SRC)/$(BASENAME).c $(SRC)/*.o $(SRC)/$(CYTHON_MODULE_LIB) build

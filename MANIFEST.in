@@ -1,0 +1,3 @@
+include README.md
+recursive-include pypkcs11 *.pxd *.pyx
+recursive-exclude pypkcs11 *.c
