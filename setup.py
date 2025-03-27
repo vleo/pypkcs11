@@ -20,7 +20,7 @@ setup(
     exclude_package_data={ '': ['*.c', '*.pyx'] },
     entry_points={
         'console_scripts': [
-            'pypkcs11-utility=pypkcs11.PyPkcs11Utility:main'
+            'pypkcs11_test=pypkcs11.PyPkcs11_test:main'
         ]
     }
 )
